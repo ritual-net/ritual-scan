@@ -223,7 +223,7 @@ export default function BlocksPage() {
           </div>
         )}
 
-        {blocks.length === 0 && !loading && !error && (
+        {blocks.length === 0 && !initialLoading && !error && (
           <div className="text-center py-12 text-lime-300">
             <p>No blocks found. Check your RETH node connection.</p>
           </div>

@@ -265,7 +265,7 @@ export default function TransactionsPage() {
           </div>
         )}
 
-        {transactions.length === 0 && !loading && !error && (
+        {transactions.length === 0 && !initialLoading && !error && (
           <div className="text-center py-12 text-lime-300">
             <p>No transactions found. Check your RETH node connection.</p>
           </div>
