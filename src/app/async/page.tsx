@@ -64,7 +64,7 @@ export default function AsyncPage() {
         if (block.transactions && Array.isArray(block.transactions)) {
           console.log(`🔍 [ASYNC DIAGNOSIS] Block ${block.number} has ${block.transactions.length} transactions`)
           
-          // Process transactions directly like transactions page does
+          // Match transactions page approach - use transactions directly from block
           for (const tx of block.transactions.slice(0, 10)) {
             if (typeof tx === 'object' && tx.hash) {
                   allTxs.push(tx)
