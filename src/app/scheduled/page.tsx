@@ -184,13 +184,6 @@ export default function ScheduledPage({ searchParams }: ScheduledPageProps) {
                   </button>
                 )}
               </div>
-              <button 
-                onClick={loadScheduledTransactions}
-                disabled={initialLoading || isUpdating}
-                className="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 disabled:opacity-50 transition-colors"
-              >
-                {initialLoading ? 'Loading...' : isUpdating ? 'Updating...' : 'Refresh'}
-              </button>
             </div>
           </div>
         </div>

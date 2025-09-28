@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useTransition } from 'react'
 import { rethClient } from '@/lib/reth-client'
 import { Navigation } from '@/components/Navigation'
 import { useMempoolUpdates, useTransactionUpdates, useRealtimeStatus } from '@/hooks/useRealtime'
@@ -34,8 +34,11 @@ export default function MempoolPage() {
     totalSize: 0,
     baseFee: '0'
   })
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [isUpdating, setIsUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
 
   // Real-time WebSocket integration
   const realtimeStatus = useRealtimeStatus()
@@ -44,23 +47,47 @@ export default function MempoolPage() {
   useMempoolUpdates((mempoolData) => {
     console.log('Real-time mempool update received:', mempoolData)
     setStats(mempoolData)
+    silentUpdate() // Trigger silent reload when mempool stats change
   })
 
   // Real-time transaction updates
   useTransactionUpdates((txData) => {
-    console.log('Real-time transaction update:', txData.hash)
-    // Refresh mempool data when new transactions arrive
-    loadMempoolData()
+    console.log('New mempool transaction:', txData.hash)
+    silentUpdate() // Silent update instead of full reload
   })
 
-  useEffect(() => {
-    loadMempoolData()
+  // High-performance silent update for real-time changes
+  const silentUpdate = useCallback(async () => {
+    const now = Date.now()
+    if (now - lastUpdateTime < 1500) return // Max 1 update per 1.5 seconds
     
-    // Reduced auto-refresh since we have real-time updates
-    const interval = setInterval(loadMempoolData, 30000) // Every 30 seconds as backup
+    setLastUpdateTime(now)
+    setIsUpdating(true)
     
-    return () => clearInterval(interval)
-  }, [])
+    try {
+      startTransition(async () => {
+        const mempoolTxs = await rethClient.getMempoolTransactions()
+        
+        setTransactions(prevTxs => {
+          // Smart merge - only update if we have different transactions
+          if (mempoolTxs.length !== prevTxs.length) {
+            return mempoolTxs
+          }
+          
+          // Check if any transaction hashes are different
+          const hasChanged = mempoolTxs.some((newTx, index) => 
+            newTx.hash !== prevTxs[index]?.hash
+          )
+          
+          return hasChanged ? mempoolTxs : prevTxs
+        })
+      })
+    } catch (error) {
+      console.warn('Silent mempool update failed:', error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [lastUpdateTime])
 
   const loadMempoolData = async () => {
     try {
@@ -76,7 +103,7 @@ export default function MempoolPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load mempool data')
     } finally {
-      setLoading(false)
+      setInitialLoading(false)
     }
   }
 
@@ -145,13 +172,6 @@ export default function MempoolPage() {
                 <TransactionTypeLegend />
               </div>
             </div>
-            <button 
-              onClick={loadMempoolData}
-              disabled={loading}
-              className="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 disabled:opacity-50 transition-colors"
-            >
-              {loading ? 'Loading...' : 'Refresh'}
-            </button>
           </div>
         </div>
 
@@ -198,7 +218,7 @@ export default function MempoolPage() {
             </div>
           </div>
 
-          {loading ? (
+          {initialLoading ? (
             <div className="p-8 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-lime-400 mb-4"></div>
               <p className="text-lime-200">Loading mempool transactions...</p>
