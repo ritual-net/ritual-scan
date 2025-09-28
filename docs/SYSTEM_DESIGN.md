@@ -8,19 +8,19 @@ The Ritual Explorer is a blockchain explorer for Ritual Chain that supports asyn
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │   Backend       │    │   Blockchain    │
-│   (Next.js 14)  │◄──►│   (RPC/WS)      │◄──►│   (RETH Nodes)  │
+│   (Next.js 15)  │◄──►│   (RPC/WS)      │◄──►│   (RETH Nodes)  │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          ▼                       ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Real-time WS    │    │ Enhanced RPC    │    │ Ritual Chain    │
+│ Real-time WS    │    │ RPC Methods     │    │ Ritual Chain    │
 │ Manager         │    │ Methods         │    │ Features        │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
 ##  System Components
 
-### 1. Frontend Architecture (Next.js 14)
+### 1. Frontend Architecture (Next.js 15)
 
 #### App Router Structure
 ```
@@ -48,23 +48,41 @@ app/
 ```typescript
 // Core Components
 components/
-├── AsyncTransactionFlow.tsx    # Async flow visualization
-├── TransactionTypeBadge.tsx    # Type indicators
-├── SystemAccountBadge.tsx      # System account recognition
-├── EnhancedTransactionDetails.tsx  # Ritual transaction details
-└── SearchBar.tsx              # Search with Call ID support
+├── AsyncTransactionFlow.tsx         # Async flow visualization
+├── TransactionTypeBadge.tsx         # Type indicators
+├── TransactionTypeChip.tsx          # Alternative type display
+├── EnhancedTransactionDetails.tsx   # Ritual transaction details
+├── ScheduledTransactionFlow.tsx     # Scheduled tx visualization
+├── SearchBar.tsx                    # Search with Call ID support
+├── Navigation.tsx                   # Main navigation component
+├── RitualEventDisplayProduction.tsx # Event display system
+├── ContractInteractionDisplay.tsx   # Contract interaction UI
+└── ui/                              # Shadcn/ui components
+    ├── button.tsx
+    ├── card.tsx
+    ├── table.tsx
+    └── ...
 
-// Hooks  
-hooks/
-├── useRealtime.ts             # WebSocket real-time hooks
-├── useBlockUpdates.ts         # Block-specific updates
-├── useTransactionUpdates.ts   # Transaction-specific updates
-└── useMempoolUpdates.ts       # Mempool-specific updates
+// Pages (App Router)
+app/
+├── page.tsx                    # Dashboard homepage
+├── blocks/page.tsx            # Block explorer
+├── transactions/page.tsx      # Transaction list
+├── mempool/page.tsx          # Real-time mempool
+├── scheduled/page.tsx        # Scheduled transactions
+├── gas-tracker/page.tsx      # Gas price tracker
+├── settings/page.tsx         # RPC configuration
+├── ritual-analytics/page.tsx # Analytics dashboard
+├── tx/[txHash]/page.tsx      # Transaction details
+├── block/[blockNumber]/page.tsx # Block details
+└── address/[address]/page.tsx   # Address explorer
 
 // Core Libraries
 lib/
 ├── reth-client.ts             # RETHClient with Ritual support
-└── realtime-websocket.ts      # WebSocket manager
+├── realtime-websocket.ts      # WebSocket manager
+├── ritual-events-production.ts # Event parsing system
+└── genesis-scanner.ts         # Contract discovery
 ```
 
 ### 2. RETHClient System

@@ -1,7 +1,7 @@
-# Ritual Explorer - Advanced Blockchain Explorer
+# Ritual Explorer
 
 ![Ritual Explorer](https://img.shields.io/badge/Ritual-Explorer-84cc16?style=for-the-badge&logo=blockchain&logoColor=white)
-![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)
+![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue?style=for-the-badge&logo=typescript)
 ![Real-time](https://img.shields.io/badge/WebSocket-Real--time-84cc16?style=for-the-badge)
 
@@ -226,24 +226,9 @@ The explorer includes extensive real-time testing:
 - Async flow visualization
 - Call ID search functionality
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)  
-5. Open a Pull Request
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **Ritual Network** for the innovative async execution model
-- **RETH** for high-performance Ethereum execution
-- **Next.js Team** for the excellent React framework
-- **Etherscan** for UI/UX inspiration
 
 ---
 
