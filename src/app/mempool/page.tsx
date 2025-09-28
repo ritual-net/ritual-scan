@@ -136,6 +136,10 @@ export default function MempoolPage() {
     return `Last updated: ${now.toLocaleTimeString()}`
   }
 
+  useEffect(() => {
+    loadMempoolData() // Initial load on component mount
+  }, [])
+
   return (
     <div className="min-h-screen bg-black">
       <Navigation currentPage="mempool" />
