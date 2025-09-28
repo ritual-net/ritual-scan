@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { rethClient, RitualTransactionType, SYSTEM_ACCOUNTS } from '@/lib/reth-client'
 import { useTransactionUpdates, useRealtimeStatus } from '@/hooks/useRealtime'
 import { TransactionTypeBadge, SystemAccountBadge } from '@/components/TransactionTypeBadge'
