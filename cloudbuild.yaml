@@ -1,0 +1,93 @@
+# Cloud Build configuration for Ritual Explorer
+# This file enables automatic deployment when code is pushed to repository
+
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build', 
+      '-t', 'gcr.io/$PROJECT_ID/ritual-explorer:$COMMIT_SHA',
+      '-t', 'gcr.io/$PROJECT_ID/ritual-explorer:latest',
+      '.'
+    ]
+    id: 'build-image'
+
+  # Push the container image to Container Registry  
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', 'gcr.io/$PROJECT_ID/ritual-explorer']
+    id: 'push-image'
+    waitFor: ['build-image']
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+    - 'run'
+    - 'deploy'
+    - 'ritual-explorer'
+    - '--image'
+    - 'gcr.io/$PROJECT_ID/ritual-explorer:$COMMIT_SHA'
+    - '--region'
+    - '${_REGION}'
+    - '--platform'
+    - 'managed'
+    - '--allow-unauthenticated'
+    - '--memory'
+    - '2Gi'
+    - '--cpu'
+    - '2'
+    - '--max-instances'
+    - '10'
+    - '--port'
+    - '3000'
+    - '--service-account'
+    - 'ritual-explorer-sa@$PROJECT_ID.iam.gserviceaccount.com'
+    - '--set-env-vars'
+    - 'NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1'
+    - '--set-secrets'
+    - 'NEXT_PUBLIC_RETH_RPC_URL=ritual-rpc-url:latest,NEXT_PUBLIC_RETH_WS_URL=ritual-ws-url:latest'
+    id: 'deploy-service'
+    waitFor: ['push-image']
+
+  # Run health check
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+    - '-c'
+    - |
+      # Get service URL
+      SERVICE_URL=$(gcloud run services describe ritual-explorer --region=${_REGION} --format='value(status.url)')
+      echo "Deployed to: $$SERVICE_URL"
+      
+      # Wait for service to be ready and test health endpoint
+      echo "Waiting for service to be ready..."
+      for i in {1..30}; do
+        if curl -f "$$SERVICE_URL/api/health" > /dev/null 2>&1; then
+          echo "✅ Health check passed!"
+          exit 0
+        fi
+        echo "Attempt $$i/30 failed, retrying in 10s..."
+        sleep 10
+      done
+      echo "❌ Health check failed after 5 minutes"
+      exit 1
+    id: 'health-check'
+    waitFor: ['deploy-service']
+
+# Substitution variables (can be overridden in trigger)
+substitutions:
+  _REGION: us-central1
+
+# Build options
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'  # Faster builds
+
+# Build timeout (max 20 minutes)
+timeout: 1200s
+
+# Store build logs and artifacts
+artifacts:
+  images:
+  - 'gcr.io/$PROJECT_ID/ritual-explorer:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/ritual-explorer:latest'
