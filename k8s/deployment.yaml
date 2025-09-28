@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: etherscan-clone
+  name: ritual-explorer
   labels:
-    app: etherscan-clone
+    app: ritual-explorer
     version: v1
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: etherscan-clone
+      app: ritual-explorer
   template:
     metadata:
       labels:
-        app: etherscan-clone
+        app: ritual-explorer
     spec:
       containers:
-      - name: etherscan-clone
-        image: ghcr.io/your-username/etherscan-clone:latest
+      - name: ritual-explorer
+        image: gcr.io/PROJECT_ID/ritual-explorer:latest
         ports:
         - containerPort: 3000
           name: http
@@ -32,7 +32,7 @@ spec:
           value: "ws://35.185.40.237:8546"
         envFrom:
         - secretRef:
-            name: etherscan-clone-secrets
+            name: ritual-explorer-secrets
         resources:
           requests:
             memory: "512Mi"
@@ -61,12 +61,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: etherscan-clone-service
+  name: ritual-explorer-service
   labels:
-    app: etherscan-clone
+    app: ritual-explorer
 spec:
   selector:
-    app: etherscan-clone
+    app: ritual-explorer
   ports:
   - name: http
     port: 80
@@ -78,7 +78,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: etherscan-clone-ingress
+  name: ritual-explorer-ingress
   annotations:
     kubernetes.io/ingress.class: "nginx"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
@@ -87,17 +87,17 @@ metadata:
 spec:
   tls:
   - hosts:
-    - your-domain.com
-    secretName: etherscan-clone-tls
+    - ritual-explorer.YOUR_DOMAIN.com
+    secretName: ritual-explorer-tls
   rules:
-  - host: your-domain.com
+  - host: ritual-explorer.YOUR_DOMAIN.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: etherscan-clone-service
+            name: ritual-explorer-service
             port:
               number: 80
 
@@ -105,7 +105,7 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: etherscan-clone-secrets
+  name: ritual-explorer-secrets
 type: Opaque
 stringData:
   NEXT_PUBLIC_ETHERSCAN_API_KEY: "your-etherscan-api-key"
@@ -117,12 +117,12 @@ stringData:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: etherscan-clone-hpa
+  name: ritual-explorer-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: etherscan-clone
+    name: ritual-explorer
   minReplicas: 2
   maxReplicas: 10
   metrics:

@@ -265,6 +265,80 @@ rollback: ## Rollback to previous version
 	@echo "$(YELLOW)Rolling back to previous version...$(NC)"
 	# Add rollback logic here
 
+##@ GKE Deployment
+
+.PHONY: setup-gke
+setup-gke: ## Setup GKE cluster (requires PROJECT_ID)
+	@echo "$(BLUE)Setting up GKE cluster...$(NC)"
+	@if [ -z "$(PROJECT_ID)" ]; then \
+		echo "$(RED)Error: PROJECT_ID not set$(NC)"; \
+		echo "$(YELLOW)Usage: make setup-gke PROJECT_ID=your-project-id$(NC)"; \
+		exit 1; \
+	fi
+	./scripts/setup-gke.sh $(PROJECT_ID)
+
+.PHONY: docker-build-gcr
+docker-build-gcr: docker-build ## Build and tag for Google Container Registry
+	@echo "$(YELLOW)Tagging image for GCR...$(NC)"
+	@if [ -z "$(PROJECT_ID)" ]; then \
+		echo "$(RED)Error: PROJECT_ID not set$(NC)"; \
+		echo "$(YELLOW)Usage: make docker-build-gcr PROJECT_ID=your-project-id$(NC)"; \
+		exit 1; \
+	fi
+	docker tag $(APP_NAME):$(VERSION) gcr.io/$(PROJECT_ID)/$(APP_NAME):$(VERSION)
+	docker tag $(APP_NAME):$(VERSION) gcr.io/$(PROJECT_ID)/$(APP_NAME):latest
+
+.PHONY: docker-push-gcr
+docker-push-gcr: docker-build-gcr ## Push image to Google Container Registry
+	@echo "$(GREEN)Pushing to GCR...$(NC)"
+	@if [ -z "$(PROJECT_ID)" ]; then \
+		echo "$(RED)Error: PROJECT_ID not set$(NC)"; \
+		echo "$(YELLOW)Usage: make docker-push-gcr PROJECT_ID=your-project-id$(NC)"; \
+		exit 1; \
+	fi
+	docker push gcr.io/$(PROJECT_ID)/$(APP_NAME):$(VERSION)
+	docker push gcr.io/$(PROJECT_ID)/$(APP_NAME):latest
+
+.PHONY: deploy-gke
+deploy-gke: docker-push-gcr ## Deploy to GKE cluster
+	@echo "$(GREEN)Deploying to GKE...$(NC)"
+	@if [ -z "$(PROJECT_ID)" ]; then \
+		echo "$(RED)Error: PROJECT_ID not set$(NC)"; \
+		echo "$(YELLOW)Usage: make deploy-gke PROJECT_ID=your-project-id$(NC)"; \
+		exit 1; \
+	fi
+	# Replace PROJECT_ID placeholder in deployment
+	sed 's/PROJECT_ID/$(PROJECT_ID)/g' k8s/deployment.yaml | kubectl apply -f -
+	kubectl rollout status deployment/ritual-explorer -n default
+	@echo "$(GREEN)✅ Deployment complete!$(NC)"
+
+.PHONY: gke-status
+gke-status: ## Check GKE deployment status
+	@echo "$(BLUE)GKE Deployment Status:$(NC)"
+	kubectl get pods -l app=ritual-explorer
+	kubectl get services ritual-explorer-service
+	kubectl get ingress ritual-explorer-ingress
+
+.PHONY: gke-logs
+gke-logs: ## View GKE pod logs
+	@echo "$(BLUE)GKE Pod Logs:$(NC)"
+	kubectl logs -l app=ritual-explorer --tail=50 -f
+
+.PHONY: gke-shell
+gke-shell: ## Access GKE pod shell
+	@echo "$(BLUE)Accessing GKE pod shell...$(NC)"
+	kubectl exec -it $$(kubectl get pods -l app=ritual-explorer -o jsonpath='{.items[0].metadata.name}') -- /bin/sh
+
+.PHONY: gke-scale
+gke-scale: ## Scale GKE deployment (usage: make gke-scale REPLICAS=5)
+	@echo "$(YELLOW)Scaling GKE deployment...$(NC)"
+	kubectl scale deployment ritual-explorer --replicas=$(REPLICAS)
+
+.PHONY: gke-cleanup
+gke-cleanup: ## Delete GKE resources
+	@echo "$(YELLOW)Cleaning up GKE resources...$(NC)"
+	kubectl delete -f k8s/deployment.yaml || true
+
 ##@ Security
 
 .PHONY: security-scan

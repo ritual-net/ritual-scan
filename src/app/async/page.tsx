@@ -53,9 +53,9 @@ export default function AsyncPage() {
       
       console.log('🔍 [ASYNC DIAGNOSIS] Starting async transaction search...')
       
-      // MATCH TRANSACTIONS PAGE: Get recent blocks and filter for async transactions
-      const recentBlocks = await rethClient.getRecentBlocks(5) // Same as transactions page
-      console.log(`🔍 [ASYNC DIAGNOSIS] Got ${recentBlocks.length} recent blocks (matching transactions page)`)
+      // Get recent blocks and filter for async transactions
+      const recentBlocks = await rethClient.getRecentBlocks(10)
+      console.log(`🔍 [ASYNC DIAGNOSIS] Got ${recentBlocks.length} recent blocks`)
       
       const asyncTxs: AsyncTransaction[] = []
       const allTxs: any[] = []
@@ -64,38 +64,43 @@ export default function AsyncPage() {
         if (block.transactions && Array.isArray(block.transactions)) {
           console.log(`🔍 [ASYNC DIAGNOSIS] Block ${block.number} has ${block.transactions.length} transactions`)
           
-          // MATCH TRANSACTIONS PAGE: Process transactions directly from block
-          for (const tx of block.transactions.slice(0, 10)) { // Same limit as transactions page
+          // Process transactions directly like transactions page does
+          for (const tx of block.transactions.slice(0, 10)) {
             if (typeof tx === 'object' && tx.hash) {
-              allTxs.push(tx)
-              
-              // Log transaction details for diagnosis
-              console.log(`🔍 [ASYNC DIAGNOSIS] TX ${tx.hash.slice(0,10)}... - Type: ${tx.type}, From: ${tx.from?.slice(0,10)}..., To: ${tx.to?.slice(0,10)}...`)
-              
-              // STRICT async filtering - match what transactions tab shows
-              const isAsyncTx = (
-                // Check transaction type (strict)
-                tx.type === '0x11' || tx.type === '0x12' ||
-                tx.type === RitualTransactionType.ASYNC_COMMITMENT ||
-                tx.type === RitualTransactionType.ASYNC_SETTLEMENT ||
-                // Check if it has async-related fields
-                tx.commitmentTx || tx.settlementTx || tx.originTx ||
-                // Check system accounts
-                (tx.from && (
-                  tx.from === SYSTEM_ACCOUNTS.ASYNC_COMMITMENT ||
-                  tx.from === SYSTEM_ACCOUNTS.ASYNC_SETTLEMENT
-                )) ||
-                (tx.to && (
-                  tx.to === SYSTEM_ACCOUNTS.ASYNC_COMMITMENT ||
-                  tx.to === SYSTEM_ACCOUNTS.ASYNC_SETTLEMENT
-                ))
-              )
-              
-              if (isAsyncTx) {
-                console.log(`✅ [ASYNC DIAGNOSIS] Found async transaction: ${tx.hash}`)
-                asyncTxs.push(tx as AsyncTransaction)
+                  allTxs.push(tx)
+                  
+                  // Log transaction details for diagnosis
+                  console.log(`🔍 [ASYNC DIAGNOSIS] TX ${tx.hash.slice(0,10)}... - Type: ${tx.type}, From: ${tx.from?.slice(0,10)}..., To: ${tx.to?.slice(0,10)}...`)
+                  
+                  // RELAXED async filtering - try multiple criteria
+                  const isAsyncTx = (
+                    // Check transaction type
+                    tx.type === '0x11' || tx.type === '0x12' ||
+                    tx.type === RitualTransactionType.ASYNC_COMMITMENT ||
+                    tx.type === RitualTransactionType.ASYNC_SETTLEMENT ||
+                    // Check if it has async-related fields
+                    tx.commitmentTx || tx.settlementTx || tx.originTx ||
+                    // Check system accounts
+                    (tx.from && (
+                      tx.from === SYSTEM_ACCOUNTS.ASYNC_COMMITMENT ||
+                      tx.from === SYSTEM_ACCOUNTS.ASYNC_SETTLEMENT
+                    )) ||
+                    (tx.to && (
+                      tx.to === SYSTEM_ACCOUNTS.ASYNC_COMMITMENT ||
+                      tx.to === SYSTEM_ACCOUNTS.ASYNC_SETTLEMENT
+                    )) ||
+                    // Check if transaction has 'async' in input data
+                    (tx.input && tx.input.length > 10)
+                  )
+                  
+                  if (isAsyncTx) {
+                    console.log(`✅ [ASYNC DIAGNOSIS] Found async transaction: ${tx.hash}`)
+                    asyncTxs.push(tx as AsyncTransaction)
+                  }
+                }
+              } catch (txError) {
+                console.log(`Failed to fetch transaction ${txHash}:`, txError)
               }
-            }
             }
           }
         }
@@ -109,27 +114,6 @@ export default function AsyncPage() {
       console.log(`   - Transaction types seen:`, [...new Set(allTxs.map(tx => tx.type))])
       console.log(`   - System accounts defined:`, SYSTEM_ACCOUNTS)
       console.log(`   - RitualTransactionType constants:`, RitualTransactionType)
-      
-      // DETAILED ANALYSIS: Check each transaction specifically
-      console.log(`🔍 [ASYNC DIAGNOSIS] DETAILED TRANSACTION ANALYSIS:`)
-      allTxs.forEach((tx, index) => {
-        const hasAsyncType = tx.type === '0x11' || tx.type === '0x12'
-        const hasAsyncFields = tx.commitmentTx || tx.settlementTx || tx.originTx
-        const hasAsyncAccounts = (tx.from && (tx.from === SYSTEM_ACCOUNTS.ASYNC_COMMITMENT || tx.from === SYSTEM_ACCOUNTS.ASYNC_SETTLEMENT)) || 
-                               (tx.to && (tx.to === SYSTEM_ACCOUNTS.ASYNC_COMMITMENT || tx.to === SYSTEM_ACCOUNTS.ASYNC_SETTLEMENT))
-        
-        console.log(`   TX ${index + 1}: ${tx.hash.slice(0,10)}...`)
-        console.log(`     Type: ${tx.type}`)
-        console.log(`     Has async type (0x11/0x12): ${hasAsyncType}`)
-        console.log(`     Has async fields: ${hasAsyncFields}`)
-        console.log(`     Has async accounts: ${hasAsyncAccounts}`)
-        console.log(`     From: ${tx.from}`)
-        console.log(`     To: ${tx.to}`)
-        
-        if (hasAsyncType) {
-          console.log(`     ⭐ THIS IS AN ASYNC TRANSACTION! Type: ${tx.type}`)
-        }
-      })
       
       // If no async txs found, show sample transaction for analysis
       if (asyncTxs.length === 0 && allTxs.length > 0) {
