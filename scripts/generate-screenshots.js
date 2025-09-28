@@ -60,36 +60,13 @@ const pages = [
     title: 'Block Details',
     description: 'Detailed block information with Etherscan-style layout'
   },
-  // Transaction Type Examples
+  // NOTE: These are EXAMPLE transaction hashes - actual types need to be verified
+  // We should manually verify transaction types before claiming them
   {
-    name: 'tx-legacy',
+    name: 'transaction-detail-example',
     url: '/tx/0x15b8a881952af04dba8a68b7c2989c2460b4c140be9fda4bc3244a4a32154868',
-    title: 'Legacy Transaction (Type 0x0)',
-    description: 'Standard Ethereum legacy transaction with enhanced Ritual Chain event parsing'
-  },
-  {
-    name: 'tx-eip1559',
-    url: '/tx/0x7d0e73a022dd150a10dd4d02008cecc2618c08918efd1f4a64ebab550ad3f7e6',
-    title: 'EIP-1559 Transaction (Type 0x2)',
-    description: 'Modern EIP-1559 transaction with priority fee and base fee mechanism'
-  },
-  {
-    name: 'tx-scheduled',
-    url: '/tx/0x5c7a0b8adf152ec9d7abd212e9b65b5e5828273b3ae46ea96672e346240b7b45',
-    title: 'Scheduled Transaction (Type 0x10)',
-    description: 'Ritual Chain scheduled transaction with Call ID tracking and cron-like execution'
-  },
-  {
-    name: 'tx-async-commitment',
-    url: '/tx/0x36be18afcaf946fa3c1917eea235469e4dc86c989f91802d949c04be60f5eb5a',
-    title: 'Async Commitment Transaction (Type 0x11)',
-    description: 'TEE execution commitment transaction in Ritual Chain async flow'
-  },
-  {
-    name: 'tx-async-settlement',
-    url: '/tx/0xf3f7dee90ab3e08bc57c03ea0b997b38cb3523a0981e68c0683281f8b149f80b',
-    title: 'Async Settlement Transaction (Type 0x12)',
-    description: 'Final settlement transaction with fee distribution in Ritual Chain async execution'
+    title: 'Transaction Detail Example',
+    description: 'Example transaction detail page showing enhanced Ritual Chain event parsing and contract integration'
   }
 ];
 
@@ -156,8 +133,34 @@ async function generateScreenshots() {
           await page.waitForSelector('.animate-pulse, .text-lime-400', { timeout: 5000 });
         } else if (pageInfo.name === 'settings') {
           await page.waitForSelector('input, .bg-white\\/5', { timeout: 5000 });
-        } else if (pageInfo.name.startsWith('tx-') || pageInfo.name === 'transaction-detail') {
+        } else if (pageInfo.name.startsWith('tx-') || pageInfo.name === 'transaction-detail-example') {
           await page.waitForSelector('.text-lime-400, .bg-white\\/5, .font-mono', { timeout: 10000 });
+          
+          // Try to click on "Raw Event Logs" section to expand it
+          try {
+            // Look for buttons or headings containing "Raw" or "Event Logs" 
+            const expandButton = await page.evaluate(() => {
+              const elements = document.querySelectorAll('h3, button, div[role="button"]');
+              for (let el of elements) {
+                if (el.textContent && el.textContent.includes('Raw Event Logs')) {
+                  return el;
+                }
+              }
+              return null;
+            });
+            
+            if (expandButton) {
+              await page.evaluate((element) => {
+                element.click();
+              }, expandButton);
+              console.log(`📋 Clicked Raw Event Logs for ${pageInfo.name}`);
+              await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for expansion
+            } else {
+              console.log(`📋 No Raw Event Logs section found for ${pageInfo.name}`);
+            }
+          } catch (clickError) {
+            console.log(`⚠️ Could not find/click Raw Event Logs for ${pageInfo.name}:`, clickError.message);
+          }
         } else if (pageInfo.name === 'analytics') {
           await page.waitForSelector('.plotly, canvas, svg', { timeout: 8000 });
         } else {
