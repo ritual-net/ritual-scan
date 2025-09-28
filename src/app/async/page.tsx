@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useTransition, useCallback } from 'react'
 import { rethClient, RitualTransactionType, SYSTEM_ACCOUNTS } from '@/lib/reth-client'
-import { useTransactionUpdates, useRealtimeStatus } from '@/hooks/useRealtime'
+import { useTransactionUpdates, useRealtimeStatus, useMempoolUpdates } from '@/hooks/useRealtime'
 import { TransactionTypeBadge, SystemAccountBadge } from '@/components/TransactionTypeBadge'
 import { Navigation } from '@/components/Navigation'
 import Link from 'next/link'
@@ -33,17 +33,42 @@ export default function AsyncPage() {
   
   const realtimeStatus = useRealtimeStatus()
 
+  // Silent update for real-time changes
+  const silentUpdate = useCallback(async () => {
+    const now = Date.now()
+    if (now - lastUpdateTime < 2000) return // Max 1 update per 2 seconds
+    
+    setLastUpdateTime(now)
+    setIsUpdating(true)
+    
+    try {
+      startTransition(async () => {
+        await loadAsyncTransactions()
+      })
+    } catch (error) {
+      console.warn('Silent async update failed:', error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [lastUpdateTime])
+
+  // Real-time mempool updates
+  useMempoolUpdates((mempoolData) => {
+    console.log('Real-time mempool update received for async check')
+    silentUpdate() // Check for new async transactions
+  })
+
   // Real-time transaction updates
   useTransactionUpdates((txData) => {
-    console.log('🔄 New async transaction received:', txData.hash)
-    loadAsyncTransactions()
+    console.log('🔄 New transaction received, checking if async:', txData.hash)
+    silentUpdate() // Silent update instead of full reload
   })
 
   useEffect(() => {
-    loadAsyncTransactions()
+    loadAsyncTransactions() // Initial load
     
-    // Auto-refresh every 15 seconds
-    const interval = setInterval(loadAsyncTransactions, 15000)
+    // Auto-refresh backup every 30 seconds
+    const interval = setInterval(() => silentUpdate(), 30000)
     
     return () => clearInterval(interval)
   }, [])

@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ritual-explorer-http
+  labels:
+    app: ritual-explorer-http
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ritual-explorer-http
+  template:
+    metadata:
+      labels:
+        app: ritual-explorer-http
+    spec:
+      containers:
+      - name: ritual-explorer-http
+        image: gcr.io/PROJECT_ID/ritual-explorer:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: NEXT_PUBLIC_DEFAULT_CHAIN
+          value: "ethereum"
+        - name: NEXT_PUBLIC_RETH_RPC_URL
+          value: "http://35.185.40.237:8545"
+        - name: NEXT_PUBLIC_RETH_WS_URL
+          value: "ws://35.185.40.237:8546"
+        - name: FORCE_HTTP_ONLY
+          value: "true"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ritual-explorer-http-service
+  labels:
+    app: ritual-explorer-http
+spec:
+  selector:
+    app: ritual-explorer-http
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+    protocol: TCP
+  type: LoadBalancer  # This will create an external IP
+
+---
+# HTTP-only Ingress (no SSL/TLS)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ritual-explorer-http-ingress
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.allow-http: "true"
+    kubernetes.io/ingress.global-static-ip-name: "ritual-explorer-ip"
+    # Disable HTTPS redirect
+    ingress.gcp.io/url-map: "ritual-explorer-http-map"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: ritual-explorer-http-service
+            port:
+              number: 80
+
+---
+# ConfigMap for HTTP-only configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ritual-explorer-http-config
+data:
+  FORCE_HTTP_ONLY: "true"
+  DISABLE_HTTPS_REDIRECT: "true"
