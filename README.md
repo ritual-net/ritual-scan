@@ -95,6 +95,13 @@ Live mempool monitoring with WebSocket updates
 Ritual Chain scheduled transaction pool with Call ID filtering
 
 
+### Async Transactions
+
+![Async Transactions](./docs/screenshots/async.png)
+
+Ritual Chain async transaction monitoring and TEE execution tracking
+
+
 ### Settings & Configuration
 
 ![Settings & Configuration](./docs/screenshots/settings.png)

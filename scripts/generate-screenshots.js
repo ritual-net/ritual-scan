@@ -37,6 +37,12 @@ const pages = [
     description: 'Ritual Chain scheduled transaction pool with Call ID filtering'
   },
   {
+    name: 'async',
+    url: '/async',
+    title: 'Async Transactions',
+    description: 'Ritual Chain async transaction monitoring and TEE execution tracking'
+  },
+  {
     name: 'settings',
     url: '/settings',
     title: 'Settings & Configuration',
