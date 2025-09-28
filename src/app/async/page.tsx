@@ -199,13 +199,6 @@ export default function AsyncPage() {
                 <option value="commitment">Commitments (0x11)</option>
                 <option value="settlement">Settlements (0x12)</option>
               </select>
-              <button 
-                onClick={loadAsyncTransactions}
-                disabled={initialLoading || isUpdating}
-                className="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 disabled:opacity-50 transition-colors"
-              >
-                {initialLoading ? 'Loading...' : isUpdating ? 'Updating...' : 'Refresh Async Transactions'}
-              </button>
             </div>
           </div>
         </div>
