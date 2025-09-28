@@ -1,0 +1,140 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: etherscan-clone
+  labels:
+    app: etherscan-clone
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: etherscan-clone
+  template:
+    metadata:
+      labels:
+        app: etherscan-clone
+    spec:
+      containers:
+      - name: etherscan-clone
+        image: ghcr.io/your-username/etherscan-clone:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: NEXT_PUBLIC_DEFAULT_CHAIN
+          value: "ethereum"
+        - name: NEXT_PUBLIC_RETH_RPC_URL
+          value: "http://35.185.40.237:8545"
+        - name: NEXT_PUBLIC_RETH_WS_URL
+          value: "ws://35.185.40.237:8546"
+        envFrom:
+        - secretRef:
+            name: etherscan-clone-secrets
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: etherscan-clone-service
+  labels:
+    app: etherscan-clone
+spec:
+  selector:
+    app: etherscan-clone
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: etherscan-clone-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  tls:
+  - hosts:
+    - your-domain.com
+    secretName: etherscan-clone-tls
+  rules:
+  - host: your-domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: etherscan-clone-service
+            port:
+              number: 80
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: etherscan-clone-secrets
+type: Opaque
+stringData:
+  NEXT_PUBLIC_ETHERSCAN_API_KEY: "your-etherscan-api-key"
+  NEXT_PUBLIC_POLYGONSCAN_API_KEY: "your-polygonscan-api-key"
+  NEXT_PUBLIC_ARBISCAN_API_KEY: "your-arbiscan-api-key"
+  NEXT_PUBLIC_BASESCAN_API_KEY: "your-basescan-api-key"
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: etherscan-clone-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: etherscan-clone
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

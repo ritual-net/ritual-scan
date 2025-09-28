@@ -1,0 +1,188 @@
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import { ChainConfig, getDefaultChain, getChainByName } from './chains'
+
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined'
+
+// UI State interfaces
+export interface SearchState {
+  query: string
+  results: unknown[]
+  isLoading: boolean
+  recentSearches: string[]
+}
+
+export interface AppState {
+  // Chain management
+  currentChain: ChainConfig
+  switchChain: (chainName: string) => void
+  
+  // Theme management
+  theme: 'light' | 'dark' | 'system'
+  setTheme: (theme: 'light' | 'dark' | 'system') => void
+  
+  // Search state
+  search: SearchState
+  setSearchQuery: (query: string) => void
+  setSearchResults: (results: unknown[]) => void
+  setSearchLoading: (loading: boolean) => void
+  addRecentSearch: (query: string) => void
+  clearRecentSearches: () => void
+  
+  // UI state
+  sidebarOpen: boolean
+  setSidebarOpen: (open: boolean) => void
+  
+  // Data refresh
+  lastRefreshTime: number
+  refresh: () => void
+  
+  // Error handling
+  globalError: string | null
+  setGlobalError: (error: string | null) => void
+  
+  // Developer tools state
+  devToolsOpen: boolean
+  setDevToolsOpen: (open: boolean) => void
+  
+  // Table preferences
+  tablePreferences: {
+    pageSize: number
+    density: 'compact' | 'standard' | 'comfortable'
+  }
+  setTablePreferences: (prefs: Partial<AppState['tablePreferences']>) => void
+}
+
+// Create the store
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      // Chain management
+      currentChain: getDefaultChain(),
+      switchChain: (chainName: string) => {
+        const chain = getChainByName(chainName)
+        if (chain) {
+          set({ currentChain: chain })
+        }
+      },
+      
+      // Theme management
+      theme: 'system',
+      setTheme: (theme) => set({ theme }),
+      
+      // Search state
+      search: {
+        query: '',
+        results: [],
+        isLoading: false,
+        recentSearches: [],
+      },
+      setSearchQuery: (query) => 
+        set((state) => ({
+          search: { ...state.search, query }
+        })),
+      setSearchResults: (results) => 
+        set((state) => ({
+          search: { ...state.search, results, isLoading: false }
+        })),
+      setSearchLoading: (loading) => 
+        set((state) => ({
+          search: { ...state.search, isLoading: loading }
+        })),
+      addRecentSearch: (query) => 
+        set((state) => ({
+          search: {
+            ...state.search,
+            recentSearches: [
+              query,
+              ...state.search.recentSearches.filter(s => s !== query)
+            ].slice(0, 10) // Keep only last 10 searches
+          }
+        })),
+      clearRecentSearches: () => 
+        set((state) => ({
+          search: { ...state.search, recentSearches: [] }
+        })),
+      
+      // UI state
+      sidebarOpen: false,
+      setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      
+      // Data refresh
+      lastRefreshTime: Date.now(),
+      refresh: () => set({ lastRefreshTime: Date.now() }),
+      
+      // Error handling
+      globalError: null,
+      setGlobalError: (error) => set({ globalError: error }),
+      
+      // Developer tools
+      devToolsOpen: false,
+      setDevToolsOpen: (open) => set({ devToolsOpen: open }),
+      
+      // Table preferences
+      tablePreferences: {
+        pageSize: 20,
+        density: 'standard',
+      },
+      setTablePreferences: (prefs) => 
+        set((state) => ({
+          tablePreferences: { ...state.tablePreferences, ...prefs }
+        })),
+    }),
+    {
+      name: 'etherscan-clone-store',
+      partialize: (state) => ({
+        currentChain: state.currentChain,
+        theme: state.theme,
+        search: {
+          recentSearches: state.search.recentSearches,
+        },
+        tablePreferences: state.tablePreferences,
+      }),
+    }
+  )
+)
+
+// Selectors for better performance
+export const useCurrentChain = () => useAppStore(state => state.currentChain)
+export const useTheme = () => useAppStore(state => state.theme)
+export const useSearch = () => useAppStore(state => state.search)
+export const useTablePreferences = () => useAppStore(state => state.tablePreferences)
+
+// Actions
+export const useChainActions = () => useAppStore(state => ({
+  switchChain: state.switchChain,
+}))
+
+export const useSearchActions = () => useAppStore(state => ({
+  setSearchQuery: state.setSearchQuery,
+  setSearchResults: state.setSearchResults,
+  setSearchLoading: state.setSearchLoading,
+  addRecentSearch: state.addRecentSearch,
+  clearRecentSearches: state.clearRecentSearches,
+}))
+
+export const useUIActions = () => useAppStore(state => ({
+  setSidebarOpen: state.setSidebarOpen,
+  setTheme: state.setTheme,
+  refresh: state.refresh,
+  setGlobalError: state.setGlobalError,
+  setDevToolsOpen: state.setDevToolsOpen,
+  setTablePreferences: state.setTablePreferences,
+}))
+
+// Theme management hooks
+export const useThemeActions = () => {
+  const { theme, setTheme } = useAppStore(state => ({
+    theme: state.theme,
+    setTheme: state.setTheme,
+  }))
+
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light')
+  }
+
+  return { theme, setTheme, toggleTheme }
+}
