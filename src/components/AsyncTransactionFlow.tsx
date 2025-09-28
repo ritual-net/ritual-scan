@@ -91,7 +91,10 @@ export function AsyncTransactionFlow({ transaction }: AsyncTransactionFlowProps)
               console.log('❌ Failed to load commitment transaction')
             }
           } else {
-            console.log('❌ User transaction has no commitmentTx field')
+            console.log('❌ User transaction has no commitmentTx field, will show 3-step flow without commitment')
+            // For now, we'll show a simplified flow without the commitment transaction
+            // In a production environment, you might want to implement a more sophisticated
+            // search through recent blocks to find the commitment transaction
           }
         } else {
           console.log('❌ Failed to load original user transaction')
@@ -219,36 +222,52 @@ export function AsyncTransactionFlow({ transaction }: AsyncTransactionFlowProps)
             )}
 
             {/* Arrow */}
-            {chain.userTransaction && chain.commitmentTransaction && (
+            {chain.userTransaction && (chain.commitmentTransaction || chain.settlementTransaction) && (
               <div className="px-4">
                 <div className="text-lime-400 text-2xl">→</div>
               </div>
             )}
 
-            {/* Commitment Transaction */}
-            {chain.commitmentTransaction && (
+            {/* Commitment Transaction - Show placeholder if missing but we have settlement */}
+            {(chain.commitmentTransaction || (chain.userTransaction && chain.settlementTransaction)) && (
               <div className="flex-1">
-                <div className="bg-orange-900/30 border border-orange-500/30 rounded-lg p-4 text-center">
+                <div className={`${chain.commitmentTransaction ? 'bg-orange-900/30 border-orange-500/30' : 'bg-gray-900/30 border-gray-500/30'} border rounded-lg p-4 text-center`}>
                   <div className="flex items-center justify-center space-x-2 mb-2">
-                    <span className="w-8 h-8 bg-orange-500/20 rounded-full flex items-center justify-center text-orange-300 text-sm">2</span>
-                    <span className="text-orange-300 font-medium">Commitment</span>
+                    <span className={`w-8 h-8 ${chain.commitmentTransaction ? 'bg-orange-500/20 text-orange-300' : 'bg-gray-500/20 text-gray-400'} rounded-full flex items-center justify-center text-sm`}>2</span>
+                    <span className={`${chain.commitmentTransaction ? 'text-orange-300' : 'text-gray-400'} font-medium`}>Commitment</span>
                   </div>
-                  <TransactionTypeBadge type={chain.commitmentTransaction.type} className="mb-2" />
-                  <Link 
-                    href={`/tx/${chain.commitmentTransaction.hash}`}
-                    className="text-orange-300 hover:text-white font-mono text-sm block"
-                  >
-                    {shortenHash(chain.commitmentTransaction.hash)}
-                  </Link>
-                  <div className="text-xs text-orange-400 mt-1">
-                    System Account
-                  </div>
+                  {chain.commitmentTransaction ? (
+                    <>
+                      <TransactionTypeBadge type={chain.commitmentTransaction.type} className="mb-2" />
+                      <Link 
+                        href={`/tx/${chain.commitmentTransaction.hash}`}
+                        className="text-orange-300 hover:text-white font-mono text-sm block"
+                      >
+                        {shortenHash(chain.commitmentTransaction.hash)}
+                      </Link>
+                      <div className="text-xs text-orange-400 mt-1">
+                        System Account
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-gray-500/20 text-gray-400 text-xs px-2 py-1 rounded mb-2">
+                        Commitment Tx
+                      </div>
+                      <div className="text-gray-400 font-mono text-sm">
+                        Not Available
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        TEE Execution
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
 
             {/* Arrow */}
-            {chain.commitmentTransaction && chain.settlementTransaction && (
+            {(chain.commitmentTransaction || chain.userTransaction) && chain.settlementTransaction && (
               <div className="px-4">
                 <div className="text-lime-400 text-2xl">→</div>
               </div>
