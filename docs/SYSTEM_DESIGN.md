@@ -602,4 +602,5 @@ server {
 
 ---
 
-This system design provides a robust foundation for scaling Ritual Explorer from a single-instance application to an enterprise-grade blockchain analytics platform.
+This system design provides a robust foundation for# System Design - Ritual Explorer v2.0
+*Updated with 11 Contract Types & GCP Production Architecture* scaling Ritual Explorer from a single-instance application to an enterprise-grade blockchain analytics platform.

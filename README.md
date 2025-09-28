@@ -95,6 +95,13 @@ Live mempool monitoring with WebSocket updates
 Ritual Chain scheduled transaction pool with Call ID filtering
 
 
+### Settings & Configuration
+
+![Settings & Configuration](./docs/screenshots/settings.png)
+
+Network configuration, RPC endpoints, and connection testing interface
+
+
 ### Ritual Chain Analytics
 
 ![Ritual Chain Analytics](./docs/screenshots/ritual-analytics.png)
@@ -102,11 +109,11 @@ Ritual Chain scheduled transaction pool with Call ID filtering
 Advanced analytics for Ritual Chain features and adoption metrics
 
 
-### Transaction Details with Async Flow
+### Interactive Analytics Dashboard
 
-![Transaction Details with Async Flow](./docs/screenshots/transaction-detail.png)
+![Interactive Analytics Dashboard](./docs/screenshots/analytics.png)
 
-Enhanced transaction details showing async transaction relationships
+**Fixed runtime errors** - Plotly charts with multiple time aggregations (per-block, 5min, 30min, 1hr)
 
 
 ### Block Details
@@ -115,12 +122,41 @@ Enhanced transaction details showing async transaction relationships
 
 Detailed block information with Etherscan-style layout
 
+## 🔗 **Transaction Type Examples**
 
-### Blockchain Analytics
+### Legacy Transaction (Type 0x0)
 
-![Blockchain Analytics](./docs/screenshots/analytics.png)
+![Legacy Transaction](./docs/screenshots/tx-legacy.png)
 
-General blockchain analytics with charts and metrics
+Standard Ethereum legacy transaction with enhanced Ritual Chain event parsing
+
+
+### EIP-1559 Transaction (Type 0x2)
+
+![EIP-1559 Transaction](./docs/screenshots/tx-eip1559.png)
+
+Modern EIP-1559 transaction with priority fee and base fee mechanism
+
+
+### Scheduled Transaction (Type 0x10)
+
+![Scheduled Transaction](./docs/screenshots/tx-scheduled.png)
+
+**Ritual Chain scheduled transaction** with Call ID tracking and cron-like execution
+
+
+### Async Commitment Transaction (Type 0x11)
+
+![Async Commitment Transaction](./docs/screenshots/tx-async-commitment.png)
+
+**TEE execution commitment** transaction in Ritual Chain async flow
+
+
+### Async Settlement Transaction (Type 0x12)
+
+![Async Settlement Transaction](./docs/screenshots/tx-async-settlement.png)
+
+**Final settlement transaction** with fee distribution in Ritual Chain async execution
 
 
 ## 🏗️ Architecture
