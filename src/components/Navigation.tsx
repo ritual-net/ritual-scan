@@ -11,8 +11,8 @@ const NAV_ITEMS = [
   { href: '/mempool', label: 'Mempool', key: 'mempool' },
   { href: '/scheduled', label: 'Scheduled', key: 'scheduled' },
   { href: '/async', label: 'Async', key: 'async' },
-  { href: '/analytics', label: 'Analytics', key: 'analytics' },
-  { href: '/gas-tracker', label: 'Gas Tracker', key: 'gas-tracker' },
+  { href: '/analytics', label: 'Charts', key: 'analytics' },
+  { href: '/ritual-analytics', label: 'Stats', key: 'ritual-analytics' },
   { href: '/settings', label: 'Settings', key: 'settings' },
 ] as const
 

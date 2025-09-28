@@ -317,13 +317,13 @@ export default function AnalyticsPage() {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-4xl font-bold text-white">Shrinenet Explorer</h1>
+                <h1 className="text-4xl font-bold text-white">Charts Dashboard</h1>
                 <span className="px-3 py-1 text-sm font-medium text-white bg-lime-600/20 border border-lime-500/30 rounded-full">
-                  Shrinenet
+                  Real-time
                 </span>
               </div>
               <p className="text-lime-200">
-                Real-time insights from {data.blocks.length} recent blocks • Live data from RETH nodes
+                Visual analytics from {data.blocks.length} recent blocks • Live data from RETH nodes
               </p>
             </div>
             <div className="flex items-center gap-3">

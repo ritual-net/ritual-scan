@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { rethClient, RitualTransactionType } from '@/lib/reth-client'
+import { Navigation } from '@/components/Navigation'
 import Link from 'next/link'
 
 interface RitualAnalytics {
@@ -101,64 +102,21 @@ export default function RitualAnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <header className="border-b border-lime-500/20 bg-black/95 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className="text-2xl font-bold text-lime-400 hover:text-lime-300 transition-colors">
-                Ritual Explorer
-              </Link>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-lime-500/20 text-lime-300 border border-lime-500/30">
-                Shrinenet
-              </span>
-            </div>
-            
-            <nav className="hidden md:flex space-x-8">
-              <Link href="/" className="text-lime-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">
-                Home
-              </Link>
-              <Link href="/blocks" className="text-lime-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">
-                Blocks
-              </Link>
-              <Link href="/transactions" className="text-lime-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">
-                Transactions
-              </Link>
-              <Link href="/mempool" className="text-lime-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">
-                Mempool
-              </Link>
-              <Link href="/scheduled" className="text-lime-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">
-                Scheduled  
-              </Link>
-              <Link href="/analytics" className="text-lime-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">
-                Analytics
-              </Link>
-              <span className="text-white border-b-2 border-lime-400 px-3 py-2 text-sm font-medium">
-                Ritual Analytics
-              </span>
-              <Link href="/gas-tracker" className="text-lime-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">
-                Gas Tracker
-              </Link>
-              <Link href="/settings" className="text-lime-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">
-                Settings
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
+      <Navigation currentPage="ritual-analytics" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <nav className="flex items-center space-x-2 text-sm text-lime-400 mb-4">
             <Link href="/" className="hover:text-lime-200">Home</Link>
             <span>→</span>
-            <span className="text-white">Ritual Analytics</span>
+            <span className="text-white">Stats</span>
           </nav>
           
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">Ritual Chain Analytics</h1>
+              <h1 className="text-3xl font-bold text-white mb-2">Ritual Chain Stats</h1>
               <p className="text-lime-200">
-                Advanced analytics for Ritual Chain features including async execution and scheduled transactions
+                Statistical insights for Ritual Chain features including async execution and scheduled transactions
               </p>
             </div>
             <div className="flex items-center space-x-4">
