@@ -2,77 +2,34 @@ const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs').promises;
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = 'http://localhost:4005';
 const SCREENSHOT_DIR = path.join(__dirname, '..', 'docs', 'screenshots');
 
 const pages = [
+  // Verified Transaction Types - provided by user with actual transaction hashes
   {
-    name: 'homepage',
-    url: '/',
-    title: 'Ritual Explorer Homepage',
-    description: 'Enhanced dashboard with comprehensive contract monitoring and real-time deployment status'
+    name: 'tx-async-commitment',
+    url: '/tx/0x15357603a819963d7bd2399169f762aad492ab27249faa2da6659f570b0355ac',
+    title: 'Async Commitment Transaction (Type 0x11)',
+    description: 'TEE execution commitment transaction in Ritual Chain async flow'
   },
   {
-    name: 'blocks',
-    url: '/blocks',
-    title: 'Blocks Explorer',
-    description: 'Real-time block explorer with detailed block information'
+    name: 'tx-async-settlement',
+    url: '/tx/0xb0b880a40c40c4c03251560b844f453c07d948b784feadfc138809f794215549',
+    title: 'Async Settlement Transaction (Type 0x12)',
+    description: 'Final settlement transaction with fee distribution in Ritual Chain async execution'
   },
   {
-    name: 'transactions',
-    url: '/transactions',
-    title: 'Transaction Explorer',
-    description: 'Live transaction feed with Ritual Chain transaction types'
+    name: 'tx-eip1559',
+    url: '/tx/0x09bbd07fa05e52fb676d9d903608cfbed246a29833511b584d0d013588c6bd0e',
+    title: 'EIP-1559 Transaction (Type 0x2)',
+    description: 'Modern EIP-1559 transaction with priority fee and base fee mechanism'
   },
   {
-    name: 'mempool',
-    url: '/mempool',
-    title: 'Real-time Mempool',
-    description: 'Live mempool monitoring with WebSocket updates'
-  },
-  {
-    name: 'scheduled',
-    url: '/scheduled',
-    title: 'Scheduled Transactions',
-    description: 'Ritual Chain scheduled transaction pool with Call ID filtering'
-  },
-  {
-    name: 'async',
-    url: '/async',
-    title: 'Async Transactions',
-    description: 'Ritual Chain async transaction monitoring and TEE execution tracking'
-  },
-  {
-    name: 'settings',
-    url: '/settings',
-    title: 'Settings & Configuration',
-    description: 'Network configuration, RPC endpoints, and connection testing interface'
-  },
-  {
-    name: 'ritual-analytics',
-    url: '/ritual-analytics',
-    title: 'Ritual Chain Analytics',
-    description: 'Advanced analytics for Ritual Chain features and adoption metrics'
-  },
-  {
-    name: 'analytics',
-    url: '/analytics',
-    title: 'Interactive Analytics Dashboard',
-    description: 'Plotly charts with multiple time aggregations (per-block, 5min, 30min, 1hr) - Fixed runtime errors'
-  },
-  {
-    name: 'block-detail',
-    url: '/block/75255',
-    title: 'Block Details',
-    description: 'Detailed block information with Etherscan-style layout'
-  },
-  // NOTE: These are EXAMPLE transaction hashes - actual types need to be verified
-  // We should manually verify transaction types before claiming them
-  {
-    name: 'transaction-detail-example',
-    url: '/tx/0x15b8a881952af04dba8a68b7c2989c2460b4c140be9fda4bc3244a4a32154868',
-    title: 'Transaction Detail Example',
-    description: 'Example transaction detail page showing enhanced Ritual Chain event parsing and contract integration'
+    name: 'tx-scheduled',
+    url: '/tx/0xcfe26ebf97dd007756e7e44fc4880c1502134961813d35a939d6e9d786eabcde',
+    title: 'Scheduled Transaction (Type 0x10)',
+    description: 'Ritual Chain scheduled transaction with Call ID tracking and cron-like execution'
   }
 ];
 

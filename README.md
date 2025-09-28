@@ -129,20 +129,34 @@ Advanced analytics for Ritual Chain features and adoption metrics
 
 Detailed block information with Etherscan-style layout
 
-### Transaction Details
+## 🔗 **Verified Transaction Type Examples**
 
-![Transaction Details](./docs/screenshots/transaction-detail-example.png)
+### EIP-1559 Transaction (Type 0x2)
 
-Enhanced transaction detail page showing comprehensive event parsing and contract integration
+![EIP-1559 Transaction](./docs/screenshots/tx-eip1559.png)
 
-**Note**: The Ritual Explorer supports all transaction types including:
-- **Legacy (Type 0x0)** - Standard Ethereum transactions  
-- **EIP-1559 (Type 0x2)** - Modern priority fee transactions
-- **Scheduled (Type 0x10)** - Ritual Chain scheduled transactions with Call ID tracking
-- **Async Commitment (Type 0x11)** - TEE execution commitments  
-- **Async Settlement (Type 0x12)** - Final settlement with fee distribution
+Modern EIP-1559 transaction with priority fee and base fee mechanism
 
-*Screenshots of specific transaction types would need to be captured from actual blockchain data with verified transaction types.*
+
+### Scheduled Transaction (Type 0x10)
+
+![Scheduled Transaction](./docs/screenshots/tx-scheduled.png)
+
+**Ritual Chain scheduled transaction** with Call ID tracking and cron-like execution
+
+
+### Async Commitment Transaction (Type 0x11)
+
+![Async Commitment Transaction](./docs/screenshots/tx-async-commitment.png)
+
+**TEE execution commitment** transaction in Ritual Chain async flow
+
+
+### Async Settlement Transaction (Type 0x12)
+
+![Async Settlement Transaction](./docs/screenshots/tx-async-settlement.png)
+
+**Final settlement transaction** with fee distribution in Ritual Chain async execution
 
 
 ## 🏗️ Architecture
