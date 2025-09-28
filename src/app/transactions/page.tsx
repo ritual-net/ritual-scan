@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useTransition } from 'react'
 import { rethClient } from '@/lib/reth-client'
 import { Navigation } from '@/components/Navigation'
 import { getRealtimeManager } from '@/lib/realtime-websocket'
@@ -22,9 +22,12 @@ interface Transaction {
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [isUpdating, setIsUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [latestBlock, setLatestBlock] = useState<number>(0)
+  const [isPending, startTransition] = useTransition()
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
 
   useEffect(() => {
     loadTransactions()
@@ -36,10 +39,10 @@ export default function TransactionsPage() {
         console.log('💸 [Transactions] New block with transactions:', update.data)
         const blockNum = parseInt(update.data.number, 16)
         setLatestBlock(blockNum)
-        loadTransactions() // Reload transactions when new block arrives
+        silentUpdate(update.data) // Silent update for new block
       } else if (update.type === 'newTransaction') {
         console.log('💸 [Transactions] New transaction:', update.data)
-        loadTransactions() // Reload to show new transaction
+        silentUpdate(update.data) // Silent update for new transaction
       }
     })
 
@@ -50,9 +53,57 @@ export default function TransactionsPage() {
     }
   }, [])
 
+  // High-performance silent update for real-time changes
+  const silentUpdate = useCallback(async (newData?: any) => {
+    const now = Date.now()
+    if (now - lastUpdateTime < 2000) return // Max 1 update per 2 seconds
+    
+    setLastUpdateTime(now)
+    setIsUpdating(true)
+    
+    try {
+      startTransition(async () => {
+        // Get recent blocks with transactions  
+        const recentBlocks = await rethClient.getRecentBlocks(5)
+        const recentTransactions: Transaction[] = []
+        
+        for (const block of recentBlocks.slice(0, 3)) {
+          if (block.transactions && Array.isArray(block.transactions)) {
+            for (const tx of block.transactions.slice(0, 10)) {
+              if (tx && typeof tx === 'object' && tx.hash) {
+                recentTransactions.push(tx)
+                if (recentTransactions.length >= 50) break
+              }
+            }
+          }
+          if (recentTransactions.length >= 50) break
+        }
+        
+        setTransactions(prevTransactions => {
+          // Smart merge - only update if we have new transactions
+          if (recentTransactions.length > 0 && prevTransactions.length > 0) {
+            const latestPrevTx = prevTransactions[0]?.hash
+            const latestNewTx = recentTransactions[0]?.hash
+            
+            // Only update if we have a different latest transaction
+            if (latestNewTx !== latestPrevTx) {
+              return recentTransactions
+            }
+            return prevTransactions
+          }
+          return recentTransactions
+        })
+      })
+    } catch (error) {
+      console.warn('Silent transactions update failed:', error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [lastUpdateTime])
+
   const loadTransactions = async () => {
     try {
-      setLoading(true)
+      setInitialLoading(true)
       setError(null)
       
       // Get recent blocks with transactions
@@ -79,7 +130,7 @@ export default function TransactionsPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load transactions')
     } finally {
-      setLoading(false)
+      setInitialLoading(false)
     }
   }
 
@@ -122,10 +173,20 @@ export default function TransactionsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white">Latest Transactions</h1>
-          <p className="text-lime-200 mt-2">
-            Real-time transactions from RETH nodes • Latest Block: #{latestBlock.toLocaleString()}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white">Latest Transactions</h1>
+              <p className="text-lime-200 mt-2">
+                Real-time transactions from RETH nodes • Latest Block: #{latestBlock.toLocaleString()}
+              </p>
+            </div>
+            {isUpdating && (
+              <div className="flex items-center space-x-2 text-sm text-lime-400">
+                <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
+                <span>Updating transactions...</span>
+              </div>
+            )}
+          </div>
           <div className="mt-4 p-4 bg-white/5 border border-lime-500/20 rounded-lg">
             <TransactionTypeLegend />
           </div>
@@ -151,14 +212,14 @@ export default function TransactionsPage() {
           </div>
         )}
 
-        {loading ? (
+        {initialLoading ? (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-lime-400"></div>
             <p className="mt-2 text-lime-200">Loading transactions from RETH...</p>
           </div>
         ) : (
           <div className="bg-white/5 backdrop-blur-sm shadow-lg overflow-hidden sm:rounded-md border border-lime-500/20">
-            <ul className="divide-y divide-lime-500/10">
+            <ul className={`divide-y divide-lime-500/10 transition-opacity duration-300 ${isPending ? 'opacity-75' : 'opacity-100'}`}>
               {transactions.map((tx) => (
                 <li key={tx.hash} className="px-6 py-4 hover:bg-lime-500/5">
                   <div className="flex items-center justify-between">

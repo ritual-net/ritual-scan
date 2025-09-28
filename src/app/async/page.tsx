@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useTransition } from 'react'
 import { rethClient, RitualTransactionType, SYSTEM_ACCOUNTS } from '@/lib/reth-client'
 import { useTransactionUpdates, useRealtimeStatus } from '@/hooks/useRealtime'
 import { TransactionTypeBadge, SystemAccountBadge } from '@/components/TransactionTypeBadge'
@@ -23,9 +23,12 @@ interface AsyncTransaction {
 
 export default function AsyncPage() {
   const [asyncTransactions, setAsyncTransactions] = useState<AsyncTransaction[]>([])
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [isUpdating, setIsUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'commitment' | 'settlement'>('all')
+  const [isPending, startTransition] = useTransition()
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
   
   const realtimeStatus = useRealtimeStatus()
 
@@ -88,7 +91,7 @@ export default function AsyncPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load async transactions')
     } finally {
-      setLoading(false)
+      setInitialLoading(false)
     }
   }
 
@@ -202,10 +205,10 @@ export default function AsyncPage() {
               </select>
               <button 
                 onClick={loadAsyncTransactions}
-                disabled={loading}
+                disabled={initialLoading || isUpdating}
                 className="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 disabled:opacity-50 transition-colors"
               >
-                {loading ? 'Loading...' : 'Refresh'}
+                {initialLoading ? 'Loading...' : isUpdating ? 'Updating...' : 'Refresh Async Transactions'}
               </button>
             </div>
           </div>
@@ -229,7 +232,7 @@ export default function AsyncPage() {
             </div>
           </div>
 
-          {loading ? (
+          {initialLoading ? (
             <div className="p-8 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-lime-400 mb-4"></div>
               <p className="text-lime-200">Loading async transactions...</p>

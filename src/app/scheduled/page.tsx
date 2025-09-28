@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect, use, useCallback, useTransition } from 'react'
 import { rethClient } from '@/lib/reth-client'
 import { Navigation } from '@/components/Navigation'
+import { getRealtimeManager } from '@/lib/realtime-websocket'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { TransactionTypeBadge } from '@/components/TransactionTypeBadge'
@@ -31,8 +32,11 @@ interface ScheduledPageProps {
 export default function ScheduledPage({ searchParams }: ScheduledPageProps) {
   const [scheduledTxs, setScheduledTxs] = useState<ScheduledTransaction[]>([])
   const [filteredTxs, setFilteredTxs] = useState<ScheduledTransaction[]>([])
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [isUpdating, setIsUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
   
   // Fix Next.js 15 searchParams issue - unwrap the promise
   const params = searchParams ? use(searchParams) : {}
@@ -41,11 +45,58 @@ export default function ScheduledPage({ searchParams }: ScheduledPageProps) {
   useEffect(() => {
     loadScheduledTransactions()
     
-    // Auto-refresh every 10 seconds
-    const interval = setInterval(loadScheduledTransactions, 10000)
+    // Set up realtime updates using WebSocket manager
+    const realtimeManager = getRealtimeManager()
+    const unsubscribe = realtimeManager?.subscribe('scheduled-page', (update) => {
+      if (update.type === 'newBlock') {
+        console.log('📅 [Scheduled] New block received:', update.data)
+        silentUpdate(update.data)
+      }
+    })
     
-    return () => clearInterval(interval)
+    // Auto-refresh every 30 seconds (longer than others since scheduled txs change less frequently)
+    const interval = setInterval(() => silentUpdate(), 30000)
+    
+    return () => {
+      if (unsubscribe) {
+        unsubscribe()
+      }
+      clearInterval(interval)
+    }
   }, [])
+
+  // High-performance silent update for real-time changes
+  const silentUpdate = useCallback(async (newBlockData?: any) => {
+    const now = Date.now()
+    if (now - lastUpdateTime < 3000) return // Max 1 update per 3 seconds
+    
+    setLastUpdateTime(now)
+    setIsUpdating(true)
+    
+    try {
+      startTransition(async () => {
+        const scheduledTransactions = await rethClient.getScheduledTransactions()
+        
+        setScheduledTxs(prevTxs => {
+          // Smart merge - only update if we have different transactions
+          if (scheduledTransactions.length !== prevTxs.length) {
+            return scheduledTransactions
+          }
+          
+          // Check if any transaction hashes are different
+          const hasChanged = scheduledTransactions.some((newTx, index) => 
+            newTx.hash !== prevTxs[index]?.hash
+          )
+          
+          return hasChanged ? scheduledTransactions : prevTxs
+        })
+      })
+    } catch (error) {
+      console.warn('Silent scheduled update failed:', error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [lastUpdateTime])
 
   const loadScheduledTransactions = async () => {
     try {
@@ -56,7 +107,7 @@ export default function ScheduledPage({ searchParams }: ScheduledPageProps) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load scheduled transactions')
     } finally {
-      setLoading(false)
+      setInitialLoading(false)
     }
   }
 
@@ -135,10 +186,10 @@ export default function ScheduledPage({ searchParams }: ScheduledPageProps) {
               </div>
               <button 
                 onClick={loadScheduledTransactions}
-                disabled={loading}
+                disabled={initialLoading || isUpdating}
                 className="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 disabled:opacity-50 transition-colors"
               >
-                {loading ? 'Loading...' : 'Refresh'}
+                {initialLoading ? 'Loading...' : isUpdating ? 'Updating...' : 'Refresh'}
               </button>
             </div>
           </div>
@@ -160,7 +211,7 @@ export default function ScheduledPage({ searchParams }: ScheduledPageProps) {
             </div>
           </div>
 
-          {loading ? (
+          {initialLoading ? (
             <div className="p-8 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-lime-400 mb-4"></div>
               <p className="text-lime-200">Loading scheduled transactions...</p>

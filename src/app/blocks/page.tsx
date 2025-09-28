@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useTransition } from 'react'
 import { rethClient } from '@/lib/reth-client'
 import { Navigation } from '@/components/Navigation'
 import { getRealtimeManager } from '@/lib/realtime-websocket'
@@ -19,9 +19,12 @@ interface Block {
 
 export default function BlocksPage() {
   const [blocks, setBlocks] = useState<Block[]>([])
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [isUpdating, setIsUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [latestBlockNumber, setLatestBlockNumber] = useState<number>(0)
+  const [isPending, startTransition] = useTransition()
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
 
   useEffect(() => {
     loadBlocks()
@@ -32,7 +35,7 @@ export default function BlocksPage() {
         console.log('🧱 [Blocks] New block received:', update.data)
         const blockNum = parseInt(update.data.number, 16)
         setLatestBlockNumber(blockNum)
-        loadBlocks()
+        silentUpdate(update.data)
       }
     })
 
@@ -43,9 +46,43 @@ export default function BlocksPage() {
     }
   }, [])
 
+  // High-performance silent update for real-time changes
+  const silentUpdate = useCallback(async (newBlockData?: any) => {
+    const now = Date.now()
+    if (now - lastUpdateTime < 2000) return // Max 1 update per 2 seconds
+    
+    setLastUpdateTime(now)
+    setIsUpdating(true)
+    
+    try {
+      startTransition(async () => {
+        const recentBlocks = await rethClient.getRecentBlocks(20)
+        
+        setBlocks(prevBlocks => {
+          // Smart merge - only update if we have new blocks
+          if (recentBlocks.length > 0 && prevBlocks.length > 0) {
+            const latestPrevBlock = prevBlocks[0]?.number ? parseInt(prevBlocks[0].number, 16) : 0
+            const latestNewBlock = parseInt(recentBlocks[0].number, 16)
+            
+            // Only update if we actually have newer blocks
+            if (latestNewBlock > latestPrevBlock) {
+              return recentBlocks
+            }
+            return prevBlocks
+          }
+          return recentBlocks
+        })
+      })
+    } catch (error) {
+      console.warn('Silent blocks update failed:', error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [lastUpdateTime])
+
   const loadBlocks = async () => {
     try {
-      setLoading(true)
+      setInitialLoading(true)
       setError(null)
       const recentBlocks = await rethClient.getRecentBlocks(20)
       setBlocks(recentBlocks)
@@ -57,7 +94,7 @@ export default function BlocksPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load blocks')
     } finally {
-      setLoading(false)
+      setInitialLoading(false)
     }
   }
 
@@ -92,10 +129,20 @@ export default function BlocksPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white">Latest Blocks</h1>
-          <p className="text-lime-200 mt-2">
-            Real-time blocks from RETH nodes • Latest Block: #{latestBlockNumber.toLocaleString()}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white">Latest Blocks</h1>
+              <p className="text-lime-200 mt-2">
+                Real-time blocks from RETH nodes • Latest Block: #{latestBlockNumber.toLocaleString()}
+              </p>
+            </div>
+            {isUpdating && (
+              <div className="flex items-center space-x-2 text-sm text-lime-400">
+                <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
+                <span>Updating blocks...</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {error && (
@@ -118,14 +165,14 @@ export default function BlocksPage() {
           </div>
         )}
 
-        {loading ? (
+        {initialLoading ? (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-lime-400"></div>
             <p className="mt-2 text-lime-200">Loading blocks from RETH...</p>
           </div>
         ) : (
           <div className="bg-white/5 backdrop-blur-sm shadow-lg overflow-hidden sm:rounded-md border border-lime-500/20">
-            <ul className="divide-y divide-lime-500/10">
+            <ul className={`divide-y divide-lime-500/10 transition-opacity duration-300 ${isPending ? 'opacity-75' : 'opacity-100'}`}>
               {blocks.map((block) => (
                 <li key={block.hash} className="px-6 py-4 hover:bg-lime-500/5">
                   <div className="flex items-center justify-between">
