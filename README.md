@@ -26,7 +26,7 @@ A blockchain explorer for **Ritual Chain** that supports async transactions, sch
 - Protocol fee analysis
 - System vs user transaction metrics
 
-## 🖼 Screenshots
+## Screenshots
 
 
 ### Async Settlement Transaction (Type 0x12)
@@ -168,7 +168,7 @@ The explorer automatically connects to RETH WebSocket endpoints for:
 -  Scheduled transaction monitoring
 -  Connection status indicators
 
-## 🛠 Development
+## Development
 
 ### **Project Structure**
 
@@ -226,12 +226,12 @@ The explorer includes extensive real-time testing:
 - Async flow visualization
 - Call ID search functionality
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
 <div align="center">
-  <strong>Built with ❤ for the Ritual Network ecosystem</strong>
+  <strong>Built for the Ritual Network ecosystem</strong>
 </div>
