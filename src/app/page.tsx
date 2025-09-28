@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useTransition, useMemo } from 'react'
 import { rethClient } from '@/lib/reth-client'
 import { Navigation } from '@/components/Navigation'
 import { getRealtimeManager } from '@/lib/realtime-websocket'
@@ -20,8 +20,11 @@ export default function HomePage() {
     recentTransactions: [],
     recentBlocks: []
   })
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [isUpdating, setIsUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
 
   useEffect(() => {
     loadStats()
@@ -31,7 +34,8 @@ export default function HomePage() {
     const unsubscribe = realtimeManager?.subscribe('homepage', (update) => {
       if (update.type === 'newBlock') {
         console.log('📊 [Homepage] New block received:', update.data)
-        loadStats() // Reload stats when new block arrives
+        // Use silent update instead of full reload
+        silentUpdate(update.data)
       }
     })
 
@@ -42,9 +46,85 @@ export default function HomePage() {
     }
   }, [])
 
+  // High-performance silent update for real-time changes
+  const silentUpdate = useCallback(async (newBlockData?: any) => {
+    // Throttle updates to prevent excessive re-renders
+    const now = Date.now()
+    if (now - lastUpdateTime < 1000) return // Max 1 update per second
+    
+    setLastUpdateTime(now)
+    setIsUpdating(true)
+    
+    try {
+      // Use React 18 transitions for non-blocking updates
+      startTransition(async () => {
+        const [latestBlockNumber, gasPrice, recentBlocks] = await Promise.all([
+          rethClient.getLatestBlockNumber(),
+          rethClient.getGasPrice(), 
+          rethClient.getRecentBlocks(10)
+        ])
+
+        // Smart merge: Only update if data actually changed
+        setStats(prevStats => {
+          const hasBlockChanged = latestBlockNumber !== prevStats.latestBlock
+          const hasGasChanged = Math.abs(parseInt(gasPrice) - prevStats.gasPrice) > 0.1
+          const hasNewBlocks = recentBlocks.length > 0 && 
+            (recentBlocks[0]?.number !== prevStats.recentBlocks[0]?.number)
+
+          // If no significant changes, keep existing state
+          if (!hasBlockChanged && !hasGasChanged && !hasNewBlocks) {
+            return prevStats
+          }
+
+          // Incremental transaction updates
+          const updatedTransactions = hasNewBlocks ? 
+            mergeNewTransactions(prevStats.recentTransactions, recentBlocks) :
+            prevStats.recentTransactions
+
+          return {
+            latestBlock: latestBlockNumber,
+            gasPrice: hasGasChanged ? parseInt(gasPrice) || 0 : prevStats.gasPrice,
+            recentTransactions: updatedTransactions,
+            recentBlocks: hasNewBlocks ? recentBlocks : prevStats.recentBlocks
+          }
+        })
+      })
+    } catch (error) {
+      console.warn('Silent update failed:', error)
+      // Don't show error on silent updates - maintain UX
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [lastUpdateTime])
+
+  // Smart transaction merging to avoid full replacement
+  const mergeNewTransactions = useCallback((existingTxs: any[], newBlocks: any[]) => {
+    const newTransactions: any[] = []
+    
+    for (const block of newBlocks.slice(0, 2)) {
+      if (block.transactions && Array.isArray(block.transactions)) {
+        for (const tx of block.transactions.slice(0, 3)) {
+          if (tx && typeof tx === 'object' && tx.hash) {
+            // Only add if not already exists
+            const exists = existingTxs.some(existingTx => existingTx.hash === tx.hash)
+            if (!exists) {
+              newTransactions.push({
+                ...tx,
+                timestamp: block.timestamp || Date.now() / 1000
+              })
+            }
+          }
+        }
+      }
+    }
+
+    // Merge and limit to 10 most recent
+    return [...newTransactions, ...existingTxs].slice(0, 10)
+  }, [])
+
   const loadStats = async () => {
     try {
-      setLoading(true)
+      setInitialLoading(true)
       setError(null)
       
       const [latestBlockNumber, gasPrice, recentBlocks] = await Promise.all([
@@ -118,7 +198,7 @@ export default function HomePage() {
         recentBlocks: []
       })
     } finally {
-      setLoading(false)
+      setInitialLoading(false)
     }
   }
 
@@ -213,7 +293,7 @@ export default function HomePage() {
                   RITUAL Price: <span className="text-white font-medium">N/A</span>
                 </div>
                 <div className="text-lime-300">
-                  Gas: <span className="text-white font-medium">{loading ? '...' : `${stats.gasPrice} Gwei`}</span>
+                  Gas: <span className="text-white font-medium">{initialLoading ? '...' : `${stats.gasPrice} Gwei`}</span>
                 </div>
               </div>
             </div>
@@ -239,7 +319,7 @@ export default function HomePage() {
                   <div className="text-lime-400">RECENT TRANSACTIONS</div>
                 </div>
                 <div className="mt-2">
-                  <div className="text-2xl font-bold text-white">{loading ? '...' : stats.recentTransactions.length.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-white">{initialLoading ? '...' : stats.recentTransactions.length.toLocaleString()}</div>
                   <div className="text-sm text-lime-300">From last 3 blocks</div>
                 </div>
               </div>
@@ -249,7 +329,7 @@ export default function HomePage() {
                   <div className="text-lime-400">MED GAS PRICE</div>
                 </div>
                 <div className="mt-2">
-                  <div className="text-2xl font-bold text-white">{loading ? '...' : `${stats.gasPrice} Gwei`}</div>
+                  <div className="text-2xl font-bold text-white">{initialLoading ? '...' : `${stats.gasPrice} Gwei`}</div>
                   <div className="text-sm text-lime-300">($0.01)</div>
                 </div>
               </div>
@@ -259,7 +339,7 @@ export default function HomePage() {
                   <div className="text-lime-400">LAST FINALIZED BLOCK</div>
                 </div>
                 <div className="mt-2">
-                  <div className="text-2xl font-bold text-white">{loading ? '...' : stats.latestBlock.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-white">{initialLoading ? '...' : stats.latestBlock.toLocaleString()}</div>
                 </div>
               </div>
             </div>
@@ -274,18 +354,27 @@ export default function HomePage() {
               <div className="bg-black/50 px-6 py-4 border-b border-lime-500/20">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-medium text-white">Latest Blocks</h3>
-                  <button className="text-lime-300 text-sm hover:text-white">Customize</button>
+                  <div className="flex items-center space-x-2">
+                    {isUpdating && (
+                      <div className="flex items-center space-x-1 text-xs text-lime-400">
+                        <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
+                        <span>Updating</span>
+                      </div>
+                    )}
+                    <button className="text-lime-300 text-sm hover:text-white">Customize</button>
+                  </div>
                 </div>
               </div>
               
               <div className="divide-y divide-lime-500/10">
-                {loading ? (
+                {initialLoading ? (
                   <div className="p-6 text-center">
                     <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-lime-400"></div>
                     <p className="mt-2 text-lime-200 text-sm">Loading blocks...</p>
                   </div>
                 ) : (
-                  stats.recentBlocks.slice(0, 5).map((block: any, index: number) => {
+                  <div className={`transition-opacity duration-300 ${isPending ? 'opacity-75' : 'opacity-100'}`}>
+                    {stats.recentBlocks.slice(0, 5).map((block: any, index: number) => {
                     try {
                       const blockNumber = block.number ? parseInt(block.number, 16) : index;
                       return (
@@ -326,7 +415,8 @@ export default function HomePage() {
                         </div>
                       );
                     }
-                  })
+                  })}
+                  </div>
                 )}
               </div>
               
@@ -342,12 +432,20 @@ export default function HomePage() {
               <div className="bg-black/50 px-6 py-4 border-b border-lime-500/20">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-medium text-white">Latest Transactions</h3>
-                  <button className="text-lime-300 text-sm hover:text-white">Customize</button>
+                  <div className="flex items-center space-x-2">
+                    {isUpdating && (
+                      <div className="flex items-center space-x-1 text-xs text-lime-400">
+                        <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
+                        <span>Updating</span>
+                      </div>
+                    )}
+                    <button className="text-lime-300 text-sm hover:text-white">Customize</button>
+                  </div>
                 </div>
               </div>
               
               <div className="divide-y divide-lime-500/10">
-                {loading ? (
+                {initialLoading ? (
                   <div className="p-6 text-center">
                     <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-lime-400"></div>
                     <p className="mt-2 text-lime-200 text-sm">Loading transactions...</p>
@@ -358,7 +456,8 @@ export default function HomePage() {
                     <p className="text-gray-400 text-xs mt-1">Transactions from the last 3 blocks will appear here</p>
                   </div>
                 ) : (
-                  stats.recentTransactions.slice(0, 5).map((tx: any, index: number) => {
+                  <div className={`transition-opacity duration-300 ${isPending ? 'opacity-75' : 'opacity-100'}`}>
+                    {stats.recentTransactions.slice(0, 5).map((tx: any, index: number) => {
                     try {
                       return (
                         <div key={`tx-${tx.hash || index}`} className="p-4 hover:bg-lime-500/5">
@@ -401,7 +500,8 @@ export default function HomePage() {
                         </div>
                       );
                     }
-                  })
+                  })}
+                  </div>
                 )}
               </div>
               
