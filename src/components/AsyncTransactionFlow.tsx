@@ -21,6 +21,7 @@ export function AsyncTransactionFlow({ transaction }: AsyncTransactionFlowProps)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    console.log('🔍 AsyncTransactionFlow mounted for transaction:', transaction.hash, 'type:', transaction.type)
     loadTransactionChain()
   }, [transaction.hash])
 
@@ -49,6 +50,32 @@ export function AsyncTransactionFlow({ transaction }: AsyncTransactionFlowProps)
             if (settlementTx) {
               newChain.settlementTransaction = settlementTx
             }
+          }
+        }
+      }
+      
+      // If this is a settlement transaction with commitmentTx, handle it specially
+      else if (transaction.type === RitualTransactionType.ASYNC_SETTLEMENT && transaction.commitmentTx) {
+        console.log('🔄 Settlement transaction with commitmentTx field detected')
+        newChain.settlementTransaction = transaction
+        
+        // Load the commitment transaction
+        if (transaction.commitmentTx) {
+          const commitmentTx = await rethClient.getEnhancedTransaction(transaction.commitmentTx)
+          if (commitmentTx) {
+            console.log('✅ Found commitment transaction:', commitmentTx.hash)
+            newChain.commitmentTransaction = commitmentTx
+            
+            // Try to find the original user transaction via the commitment's originTx
+            if (commitmentTx.originTx) {
+              const userTx = await rethClient.getEnhancedTransaction(commitmentTx.originTx)
+              if (userTx) {
+                console.log('✅ Found original user transaction:', userTx.hash)
+                newChain.userTransaction = userTx
+              }
+            }
+          } else {
+            console.log('❌ Failed to load commitment transaction')
           }
         }
       }
@@ -145,6 +172,9 @@ export function AsyncTransactionFlow({ transaction }: AsyncTransactionFlowProps)
         commitmentTxHash: newChain.commitmentTransaction?.hash,
         settlementTxHash: newChain.settlementTransaction?.hash
       })
+      
+      console.log('🎯 Will show commitment placeholder?', 
+        !newChain.commitmentTransaction && newChain.userTransaction && newChain.settlementTransaction)
 
       setChain(newChain)
     } catch (err) {

@@ -6,18 +6,11 @@ const BASE_URL = 'http://localhost:4005';
 const SCREENSHOT_DIR = path.join(__dirname, '..', 'docs', 'screenshots');
 
 const pages = [
-  // Verified Transaction Types - provided by user with actual transaction hashes
   {
-    name: 'tx-async-commitment',
-    url: '/tx/0x15357603a819963d7bd2399169f762aad492ab27249faa2da6659f570b0355ac',
-    title: 'Async Commitment Transaction (Type 0x11)',
-    description: 'TEE execution commitment transaction in Ritual Chain async flow'
-  },
-  {
-    name: 'tx-async-settlement',
+    name: 'tx-async-settlement-debug',
     url: '/tx/0xb0b880a40c40c4c03251560b844f453c07d948b784feadfc138809f794215549',
-    title: 'Async Settlement Transaction (Type 0x12)',
-    description: 'Final settlement transaction with fee distribution in Ritual Chain async execution'
+    title: 'Async Settlement Transaction (DEBUG)',
+    description: 'Settlement transaction with debug logging to understand data flow'
   },
   {
     name: 'tx-eip1559',
@@ -71,18 +64,24 @@ async function generateScreenshots() {
   await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
   
   let successCount = 0;
-  let errorCount = 0;
 
   for (const pageInfo of pages) {
     try {
       console.log(`📸 Capturing ${pageInfo.name}...`);
       
-      const fullUrl = `${BASE_URL}${pageInfo.url}`;
+      console.log(`📸 Capturing ${pageInfo.name}...`);
       
-      // Navigate to page
-      await page.goto(fullUrl, { 
-        waitUntil: 'domcontentloaded',
-        timeout: 60000 
+      // Set up console log capture for debug mode
+      if (pageInfo.name.includes('debug')) {
+        page.on('console', msg => {
+          console.log('🌐 BROWSER:', msg.text());
+        });
+      }
+      
+      // Navigate to the page
+      await page.goto(`${BASE_URL}${pageInfo.url}`, {
+        waitUntil: 'networkidle0',
+        timeout: 30000
       });
 
       // Wait for dynamic content to load
@@ -99,30 +98,12 @@ async function generateScreenshots() {
         } else if (pageInfo.name.startsWith('tx-') || pageInfo.name === 'transaction-detail-example') {
           await page.waitForSelector('.text-lime-400, .bg-white\\/5, .font-mono', { timeout: 10000 });
           
-          // Try to click on "Raw Event Logs" section to expand it
-          try {
-            // Look for buttons or headings containing "Raw" or "Event Logs" 
-            const expandButton = await page.evaluate(() => {
-              const elements = document.querySelectorAll('h3, button, div[role="button"]');
-              for (let el of elements) {
-                if (el.textContent && el.textContent.includes('Raw Event Logs')) {
-                  return el;
-                }
-              }
-              return null;
+          // For debug mode, capture console logs
+          if (pageInfo.name.includes('debug')) {
+            const logs = await page.evaluate(() => {
+              return window.console.logs || [];
             });
-            
-            if (expandButton) {
-              await page.evaluate((element) => {
-                element.click();
-              }, expandButton);
-              console.log(`📋 Clicked Raw Event Logs for ${pageInfo.name}`);
-              await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for expansion
-            } else {
-              console.log(`📋 No Raw Event Logs section found for ${pageInfo.name}`);
-            }
-          } catch (clickError) {
-            console.log(`⚠️ Could not find/click Raw Event Logs for ${pageInfo.name}:`, clickError.message);
+            console.log('🔍 Browser console logs:', logs);
           }
         } else if (pageInfo.name === 'analytics') {
           await page.waitForSelector('.plotly, canvas, svg', { timeout: 8000 });
