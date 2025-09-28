@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs').promises;
 
-const BASE_URL = 'http://localhost:9000';
+const BASE_URL = 'http://localhost:3001';
 const SCREENSHOT_DIR = path.join(__dirname, '..', 'docs', 'screenshots');
 
 const pages = [
