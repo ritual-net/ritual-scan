@@ -1,6 +1,6 @@
 # Ritual Explorer - Design Document
 
-## 🎨 Design Philosophy
+##  Design Philosophy
 
 ### Visual Identity
 The Ritual Explorer adopts a **professional, data-focused design language** inspired by Etherscan's corporate aesthetic, customized for the Ritual Network ecosystem.
@@ -25,7 +25,7 @@ The Ritual Explorer adopts a **professional, data-focused design language** insp
 4. **Consistent Patterns**: Reusable components and layouts across pages
 5. **Real-time Awareness**: Visual indicators for live data and connection status
 
-## 📱 User Interface Design
+##  User Interface Design
 
 ### Layout System
 
@@ -105,7 +105,7 @@ Interactive diagram showing 3-phase async execution:
 - Simplified async flow diagrams
 - Touch-friendly interactive elements
 
-## 🎯 User Experience Design
+##  User Experience Design
 
 ### Information Architecture
 
@@ -155,7 +155,7 @@ Interactive diagram showing 3-phase async execution:
 - **Quick Actions**: Prominent action buttons
 - **Keyboard Support**: Full keyboard navigation
 
-## 🔧 Component Specifications
+##  Component Specifications
 
 ### Transaction Details Component
 ```typescript
@@ -222,7 +222,7 @@ interface AnalyticsProps {
 - System account activity
 - Interactive time range selection
 
-## 📊 Data Visualization
+##  Data Visualization
 
 ### Chart Types
 1. **Transaction Distribution**: Donut charts for type breakdown
@@ -237,7 +237,7 @@ interface AnalyticsProps {
 - **Accessibility**: High contrast ratios, screen reader support
 - **Responsiveness**: Scalable charts for all screen sizes
 
-## 🎨 Theme System
+##  Theme System
 
 ### Lime/Black Theme Implementation
 ```css
@@ -266,7 +266,7 @@ interface AnalyticsProps {
 - **Keyboard Navigation**: Full keyboard accessibility
 - **Motion Preferences**: Respect prefers-reduced-motion
 
-## 🔄 Animation & Transitions
+##  Animation & Transitions
 
 ### Micro-interactions
 - **Button Hovers**: Subtle color transitions (200ms)
@@ -286,7 +286,7 @@ interface AnalyticsProps {
 - **Reduced Motion**: Fallbacks for accessibility preferences
 - **Battery Awareness**: Reduced animations on low battery
 
-## 📱 Mobile-First Approach
+##  Mobile-First Approach
 
 ### Progressive Enhancement
 1. **Core Functionality**: All features work without JavaScript

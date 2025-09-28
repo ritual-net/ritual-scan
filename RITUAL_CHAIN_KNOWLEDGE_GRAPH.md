@@ -9,9 +9,9 @@ Ritual Chain is an EVM-compatible blockchain that extends standard Ethereum func
 ## 1. Core Architecture Overview
 
 ### 1.1 EVM Compatibility Matrix
-- ✅ **Standard Features**: All standard Ethereum RPCs, blocks, transactions, receipts, logs
-- ✅ **Enhanced Features**: 3 new transaction types + async execution
-- ✅ **Finality Model**: BFT instant finality (no reorg handling needed)
+-  **Standard Features**: All standard Ethereum RPCs, blocks, transactions, receipts, logs
+-  **Enhanced Features**: 3 new transaction types + async execution
+-  **Finality Model**: BFT instant finality (no reorg handling needed)
 
 ### 1.2 Key Differentiators from Standard EVM
 ```

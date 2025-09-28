@@ -7,15 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - 2025-09-28
 
-### 🎯 Major Contract Discovery & System Enhancement
+###  Major Contract Discovery & System Enhancement
 
 ### Added
 - **Contract Coverage Expansion**: Added 5 new contract types for total of 11 supported contracts
-  - ✅ ScheduledConsumer (`0x0d8d8F9694E54598dA6626556c0A18354A82d665`)
-  - ✅ WETH Token (`0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2`)  
-  - ✅ USDC Token (`0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`)
-  - ✅ Uniswap V3 Router (`0xE592427A0AEce92De3Edee1F18E0157C05861564`)
-  - ✅ Uniswap V3 Factory (`0x1F98431c8aD98523631AE4a59f267346ea31F984`)
+  -  ScheduledConsumer (`0x0d8d8F9694E54598dA6626556c0A18354A82d665`)
+  -  WETH Token (`0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2`)  
+  -  USDC Token (`0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`)
+  -  Uniswap V3 Router (`0xE592427A0AEce92De3Edee1F18E0157C05861564`)
+  -  Uniswap V3 Factory (`0x1F98431c8aD98523631AE4a59f267346ea31F984`)
 
 - **Advanced Event System**: 3 new event parsing categories
   - `scheduledConsumer` - CallScheduled events with full parameter decoding
@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `uniswap` - Generic Uniswap V3 event detection with contract type identification
 
 - **Enhanced UI Components**:
-  - Comprehensive deployment status panel showing all 11 contracts as ✅ ACTIVE
+  - Comprehensive deployment status panel showing all 11 contracts as  ACTIVE
   - Real contract addresses displayed with truncation for better UX
   - Enhanced debug information for unknown event detection
   - Contract-specific event categorization with proper icons and colors

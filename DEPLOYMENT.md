@@ -1,4 +1,4 @@
-# 🚀 Etherscan Clone - Deployment Guide
+#  Etherscan Clone - Deployment Guide
 
 ## 📋 Quick Start
 
@@ -7,7 +7,7 @@
 - Node.js 18+ (for local development)
 - Make (for using the Makefile commands)
 
-### 🔧 Setup Environment
+###  Setup Environment
 ```bash
 # Copy environment template and configure
 make env-setup
@@ -17,7 +17,7 @@ vi .env.local      # Development environment
 vi .env.production # Production environment
 ```
 
-### 🏃‍♂️ Quick Commands
+### 🏃‍♂ Quick Commands
 
 #### Development
 ```bash
@@ -40,7 +40,7 @@ make docker-health # Check container health
 make size          # Show Docker image sizes
 ```
 
-## 🏗️ Architecture
+##  Architecture
 
 ### Multi-Stage Docker Build
 - **deps**: Install production dependencies
@@ -52,7 +52,7 @@ make size          # Show Docker image sizes
 - **dev**: Development with hot reload
 - **prod**: Production with Nginx reverse proxy
 
-## 🌐 Deployment Options
+##  Deployment Options
 
 ### 1. Local Docker
 ```bash
@@ -105,7 +105,7 @@ make docker-push
 make docker-pull
 ```
 
-## 🔧 Configuration
+##  Configuration
 
 ### Environment Variables
 
@@ -158,7 +158,7 @@ mychain: {
 }
 ```
 
-## 📊 Monitoring & Health Checks
+##  Monitoring & Health Checks
 
 ### Health Endpoint
 ```bash
@@ -208,7 +208,7 @@ make audit          # NPM security audit
 make security-scan
 ```
 
-## 🚀 CI/CD
+##  CI/CD
 
 ### GitHub Actions
 Automated pipeline includes:
@@ -222,7 +222,7 @@ Automated pipeline includes:
 - Push to `develop` → Deploy to staging
 - Pull requests → Run tests
 
-## 📈 Performance
+##  Performance
 
 ### Optimizations
 - Multi-stage Docker build
@@ -237,7 +237,7 @@ Automated pipeline includes:
 - Cold start: <2 seconds
 - Memory usage: ~128MB
 
-## 🛠️ Troubleshooting
+## 🛠 Troubleshooting
 
 ### Common Issues
 
@@ -276,7 +276,7 @@ docker logs -f etherscan-clone-container --tail 100
 make docker-health
 ```
 
-## 🔄 Updates & Rollbacks
+##  Updates & Rollbacks
 
 ### Update Application
 ```bash
@@ -320,7 +320,7 @@ make rollback
 
 ---
 
-## 📝 Deployment Checklist
+##  Deployment Checklist
 
 - [ ] Environment variables configured
 - [ ] API keys obtained and set
@@ -335,4 +335,4 @@ make rollback
 
 ---
 
-Built with ❤️ for production deployment
+Built with ❤ for production deployment

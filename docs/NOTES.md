@@ -838,7 +838,7 @@ class ScheduledTransactionTracer:
 
     async def trace_transaction(self, tx_hash: str) -> Dict[str, Any]:
         """Get detailed trace of a transaction using debug_traceTransaction"""
-        logger.info(f"🔍 Tracing transaction: {tx_hash}")
+        logger.info(f" Tracing transaction: {tx_hash}")
 
         try:
             # Use callTracer to get structured call tree
@@ -972,11 +972,11 @@ class ScheduledTransactionTracer:
 
         # Color coding based on call type, success, and user call status
         if frame.error:
-            status = f"❌ REVERTED: {frame.error}"
+            status = f" REVERTED: {frame.error}"
             call_color = "\033[91m"  # Red for main call line
             detail_color = "\033[91m"  # Red for details too
         else:
-            status = "✅ SUCCESS"
+            status = " SUCCESS"
             if in_user_call:
                 call_color = "\033[96m"  # Cyan for user call line
                 detail_color = "\033[96m"  # Cyan for user details
@@ -1035,12 +1035,12 @@ class ScheduledTransactionTracer:
         trace_data = await self.trace_transaction(tx_hash)
 
         if not trace_data:
-            logger.error("❌ Could not get trace data")
+            logger.error(" Could not get trace data")
             return
 
         # Parse and display the trace
         print("\n" + "=" * 80)
-        print("🔍 TRANSACTION CALL TRACE")
+        print(" TRANSACTION CALL TRACE")
         print("=" * 80)
         print(f"Transaction Hash: {tx_hash}")
         print(f"Block Number: {trace_data.get('blockNumber', 'Unknown')}")
@@ -1050,7 +1050,7 @@ class ScheduledTransactionTracer:
         self.print_call_tree(root_frame)
 
         print("\n" + "=" * 80)
-        print("✅ TRACE ANALYSIS COMPLETE")
+        print(" TRACE ANALYSIS COMPLETE")
         print("=" * 80)
 
 async def main():

@@ -1,8 +1,8 @@
 # Ritual Explorer - System Design Document
 
-## 🏗️ Architecture Overview
+##  Architecture Overview
 
-The Ritual Explorer is a **high-performance, real-time blockchain explorer** built specifically for Ritual Chain's advanced features including async execution, scheduled transactions, and system account management.
+The Ritual Explorer is a blockchain explorer for Ritual Chain that supports async execution, scheduled transactions, and system account management.
 
 ### Architecture Diagram
 ```
@@ -18,7 +18,7 @@ The Ritual Explorer is a **high-performance, real-time blockchain explorer** bui
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 🚀 System Components
+##  System Components
 
 ### 1. Frontend Architecture (Next.js 14)
 
@@ -52,7 +52,7 @@ components/
 ├── TransactionTypeBadge.tsx    # Type indicators
 ├── SystemAccountBadge.tsx      # System account recognition
 ├── EnhancedTransactionDetails.tsx  # Ritual transaction details
-└── SearchBar.tsx              # Enhanced search with Call ID
+└── SearchBar.tsx              # Search with Call ID support
 
 // Hooks  
 hooks/
@@ -63,11 +63,11 @@ hooks/
 
 // Core Libraries
 lib/
-├── reth-client.ts             # Enhanced RETHClient
+├── reth-client.ts             # RETHClient with Ritual support
 └── realtime-websocket.ts      # WebSocket manager
 ```
 
-### 2. Enhanced RETHClient System
+### 2. RETHClient System
 
 #### Core RPC Integration
 ```typescript
@@ -76,7 +76,7 @@ class RETHClient {
   private wsUrl: string         # WebSocket endpoint  
   private currentNodeIndex: number  # Failover tracking
 
-  // Standard Methods (Enhanced)
+  // Standard Methods
   async getBlock(blockNumber: string): Promise<Block>
   async getTransaction(hash: string): Promise<Transaction>
   async getTransactionReceipt(hash: string): Promise<Receipt>
@@ -193,7 +193,7 @@ interface EnhancedTransaction {
 }
 ```
 
-## ⚡ Performance Architecture
+##  Performance Architecture
 
 ### 1. Real-Time Performance Strategy
 
@@ -404,7 +404,7 @@ const LOG_CONFIG = {
 }
 ```
 
-## 📊 Data Flow Architecture  
+##  Data Flow Architecture  
 
 ### 1. Real-Time Data Pipeline
 
@@ -460,7 +460,7 @@ interface ComponentState {
 }
 ```
 
-## 🚀 Deployment Architecture
+##  Deployment Architecture
 
 ### 1. Docker Configuration
 
@@ -562,11 +562,11 @@ server {
 }
 ```
 
-## 📈 Future Scalability
+##  Future Scalability
 
 ### 1. Performance Optimization Roadmap
 
-#### Phase 1: Current Implementation ✅
+#### Phase 1: Current Implementation 
 - WebSocket real-time updates
 - Multi-node RPC failover  
 - React component optimization

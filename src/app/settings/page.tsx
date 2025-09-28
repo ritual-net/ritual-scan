@@ -80,7 +80,7 @@ export default function SettingsPage() {
     setTestResults({})
   }
 
-  const renderConnectionStatus = (type: 'primary' | 'backup' | 'websocket') => {
+  const ConnectionStatus = ({ type }: { type: 'primary' | 'backup' | 'websocket' }) => {
     const result = testResults[type]
     const isTestingCurrent = testing[type]
 
@@ -95,23 +95,18 @@ export default function SettingsPage() {
 
     if (!result) return null
 
-    if (result.success) {
-      return (
-        <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-          <span className="text-green-300 text-sm">
-            ✅ Block {result.blockNumber?.toLocaleString()} ({result.latency}ms)
-          </span>
-        </div>
-      )
-    } else {
-      return (
-        <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-          <span className="text-red-300 text-sm">❌ {result.error}</span>
-        </div>
-      )
-    }
+    const statusConfig = result.success 
+      ? { color: 'green', icon: '✅', text: `Block ${result.blockNumber?.toLocaleString()} (${result.latency}ms)` }
+      : { color: 'red', icon: '❌', text: result.error || 'Failed' }
+
+    return (
+      <div className="flex items-center space-x-2">
+        <div className={`w-2 h-2 bg-${statusConfig.color}-400 rounded-full`}></div>
+        <span className={`text-${statusConfig.color}-300 text-sm`}>
+          {statusConfig.icon} {statusConfig.text}
+        </span>
+      </div>
+    )
   }
 
   return (
@@ -177,7 +172,7 @@ export default function SettingsPage() {
                       Test
                     </button>
                   </div>
-                  {renderConnectionStatus('primary')}
+                  <ConnectionStatus type="primary" />
                 </div>
               </div>
 
@@ -203,7 +198,7 @@ export default function SettingsPage() {
                       Test
                     </button>
                   </div>
-                  {renderConnectionStatus('backup')}
+                  <ConnectionStatus type="backup" />
                 </div>
               </div>
 

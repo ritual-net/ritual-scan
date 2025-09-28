@@ -5,30 +5,28 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue?style=for-the-badge&logo=typescript)
 ![Real-time](https://img.shields.io/badge/WebSocket-Real--time-84cc16?style=for-the-badge)
 
-A production-ready, high-performance blockchain explorer built specifically for **Ritual Chain** with advanced features including async transaction visualization, scheduled job monitoring, and real-time WebSocket updates.
+A blockchain explorer for **Ritual Chain** that supports async transactions, scheduled jobs, and real-time updates.
 
-## 🌟 Key Features
+## Key Features
 
-### 🎯 **Ritual Chain Specific Features**
-- **Async Transaction Flow Visualization** - Interactive diagrams showing 3-phase async execution
-- **Scheduled Transaction Pool** - Real-time monitoring of cron-like blockchain jobs
-- **System Account Recognition** - Special handling for Ritual system accounts (0x...fa7e, fa8e, fa9e)
-- **Enhanced Transaction Types** - Support for Types 0x10 (Scheduled), 0x11 (AsyncCommitment), 0x12 (AsyncSettlement)
-- **Advanced Search** - Call ID search, origin transaction linking, precompile address recognition
+**Ritual Chain Support**
+- Async transaction flow visualization
+- Scheduled transaction monitoring  
+- System account recognition (0x...fa7e, fa8e, fa9e)
+- Transaction types: Legacy, EIP-1559, Scheduled, AsyncCommitment, AsyncSettlement
+- Search by Call ID, origin transaction, or precompile address
 
-### ⚡ **High-Performance Real-Time Updates**
-- **WebSocket Integration** - Direct connection to RETH nodes for instant updates
-- **Multi-frequency Polling** - High-frequency mempool updates (2s), backup polling (5s)
-- **Smart Reconnection** - Exponential backoff with jitter for resilient connections
-- **Live Status Indicators** - Real-time connection status and subscriber count
+**Real-Time Updates**
+- WebSocket connection to RETH nodes
+- Mempool updates every 2 seconds
+- Connection status indicators
 
-### 📊 **Advanced Analytics**
-- **Ritual Analytics Dashboard** - Async adoption metrics, protocol fee analysis
-- **Transaction Type Distribution** - Visual breakdown of all 5 transaction types
-- **System Account Activity** - Monitoring of automated vs user transactions
-- **Precompile Usage Statistics** - Top async precompile contracts
+**Analytics**
+- Transaction type distribution
+- Protocol fee analysis
+- System vs user transaction metrics
 
-## 🖼️ Screenshots
+## 🖼 Screenshots
 
 
 ### Async Settlement Transaction (Type 0x12)
@@ -52,7 +50,7 @@ Modern EIP-1559 transaction with priority fee and base fee mechanism
 Ritual Chain scheduled transaction with Call ID tracking and cron-like execution
 
 
-## 🏗️ Architecture
+##  Architecture
 
 ### **Frontend Stack**
 - **Next.js 14** with App Router and React Server Components
@@ -72,7 +70,7 @@ Ritual Chain scheduled transaction with Call ID tracking and cron-like execution
 - **Update Throttling** and type filtering
 - **Connection Status Monitoring**
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 - Node.js 18+ 
@@ -103,7 +101,7 @@ docker build -t ritual-explorer .
 docker run -d -p 9000:3000 --name ritual-explorer ritual-explorer
 ```
 
-## 🔧 Configuration
+##  Configuration
 
 ### Environment Variables
 
@@ -125,7 +123,7 @@ The explorer automatically connects to RETH WebSocket endpoints for:
 - Mempool updates (high-frequency polling)
 - Scheduled transaction monitoring
 
-## 🎨 Ritual Chain Features
+##  Ritual Chain Features
 
 ### **Transaction Types Supported**
 
@@ -145,7 +143,7 @@ The explorer automatically connects to RETH WebSocket endpoints for:
 - System account detection (fa7e, fa8e, fa9e)
 - Precompile addresses (0x...0801, etc.)
 
-## 📱 Pages & Features
+##  Pages & Features
 
 ### **Core Pages**
 - **Homepage** - Network overview, latest blocks/transactions, stats
@@ -159,18 +157,18 @@ The explorer automatically connects to RETH WebSocket endpoints for:
 - **Transaction Details** - Enhanced with async flow visualization
 - **System Accounts** - Special pages for Ritual system addresses
 
-## 🔗 Live Demo
+##  Live Demo
 
 **Production URL:** [Browser Preview Available](http://127.0.0.1:63901)
 
 **Real-Time Features:**
-- ✅ WebSocket connection to RETH nodes
-- ✅ Live mempool updates every 2 seconds  
-- ✅ New block notifications
-- ✅ Scheduled transaction monitoring
-- ✅ Connection status indicators
+-  WebSocket connection to RETH nodes
+-  Live mempool updates every 2 seconds  
+-  New block notifications
+-  Scheduled transaction monitoring
+-  Connection status indicators
 
-## 🛠️ Development
+## 🛠 Development
 
 ### **Project Structure**
 
@@ -204,7 +202,7 @@ src/
 - **System Recognition** - Ritual system account handling
 - **Search Enhancement** - Call ID and precompile search
 
-## 🔍 Testing
+##  Testing
 
 ### **Automated Testing**
 
@@ -250,5 +248,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 <div align="center">
-  <strong>Built with ❤️ for the Ritual Network ecosystem</strong>
+  <strong>Built with ❤ for the Ritual Network ecosystem</strong>
 </div>

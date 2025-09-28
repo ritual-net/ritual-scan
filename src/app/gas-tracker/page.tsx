@@ -153,6 +153,47 @@ export default function GasTrackerPage() {
     return new Date(timestamp).toLocaleTimeString()
   }
 
+  const GasPriceCard = ({
+    type,
+    price,
+    color,
+    isRecommended
+  }: {
+    type: string
+    price: number
+    color: string
+    isRecommended: boolean
+  }) => {
+    const colorConfig = {
+      green: { text: 'text-green-400', border: 'border-green-500/50 bg-green-900/10', badge: 'bg-green-600' },
+      yellow: { text: 'text-yellow-400', border: 'border-yellow-500/50 bg-yellow-900/10', badge: 'bg-yellow-600' },
+      orange: { text: 'text-orange-400', border: 'border-orange-500/50 bg-orange-900/10', badge: 'bg-orange-600' },
+      red: { text: 'text-red-400', border: 'border-red-500/50 bg-red-900/10', badge: 'bg-red-600' }
+    }[color] || { text: 'text-gray-400', border: 'border-lime-800/30', badge: 'bg-gray-600' }
+
+    return (
+      <div className={`bg-black/20 backdrop-blur-sm p-6 rounded-lg border ${
+        isRecommended ? colorConfig.border : 'border-lime-800/30'
+      }`}>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-medium text-white">{type}</h3>
+          {isRecommended && (
+            <span className={`${colorConfig.badge} text-white text-xs px-2 py-1 rounded`}>
+              Recommended
+            </span>
+          )}
+        </div>
+        <div className={`text-3xl font-bold ${colorConfig.text} mb-1`}>
+          {price.toFixed(1)} gwei
+        </div>
+        <div className="text-lime-300 text-sm space-y-1">
+          <div>⏱️ {getConfirmationTime(price)}</div>
+          <div>💰 {getGasCost(price)} ETH</div>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black">
@@ -217,85 +258,30 @@ export default function GasTrackerPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {gasData && (
             <>
-              <div className={`bg-black/20 backdrop-blur-sm p-6 rounded-lg border ${
-                recommendation === 'slow' ? 'border-green-500/50 bg-green-900/10' : 'border-lime-800/30'
-              }`}>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-medium text-white">Slow</h3>
-                  {recommendation === 'slow' && (
-                    <span className="bg-green-600 text-white text-xs px-2 py-1 rounded">
-                      Recommended
-                    </span>
-                  )}
-                </div>
-                <div className="text-3xl font-bold text-green-400 mb-1">
-                  {gasData.slow.toFixed(1)} gwei
-                </div>
-                <div className="text-lime-300 text-sm space-y-1">
-                  <div>⏱️ {getConfirmationTime(gasData.slow)}</div>
-                  <div>💰 ${getGasCost(gasData.slow)} ETH</div>
-                </div>
-              </div>
-
-              <div className={`bg-black/20 backdrop-blur-sm p-6 rounded-lg border ${
-                recommendation === 'standard' ? 'border-yellow-500/50 bg-yellow-900/10' : 'border-lime-800/30'
-              }`}>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-medium text-white">Standard</h3>
-                  {recommendation === 'standard' && (
-                    <span className="bg-yellow-600 text-white text-xs px-2 py-1 rounded">
-                      Recommended
-                    </span>
-                  )}
-                </div>
-                <div className="text-3xl font-bold text-yellow-400 mb-1">
-                  {gasData.standard.toFixed(1)} gwei
-                </div>
-                <div className="text-lime-300 text-sm space-y-1">
-                  <div>⏱️ {getConfirmationTime(gasData.standard)}</div>
-                  <div>💰 ${getGasCost(gasData.standard)} ETH</div>
-                </div>
-              </div>
-
-              <div className={`bg-black/20 backdrop-blur-sm p-6 rounded-lg border ${
-                recommendation === 'fast' ? 'border-orange-500/50 bg-orange-900/10' : 'border-lime-800/30'
-              }`}>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-medium text-white">Fast</h3>
-                  {recommendation === 'fast' && (
-                    <span className="bg-orange-600 text-white text-xs px-2 py-1 rounded">
-                      Recommended
-                    </span>
-                  )}
-                </div>
-                <div className="text-3xl font-bold text-orange-400 mb-1">
-                  {gasData.fast.toFixed(1)} gwei
-                </div>
-                <div className="text-lime-300 text-sm space-y-1">
-                  <div>⏱️ {getConfirmationTime(gasData.fast)}</div>
-                  <div>💰 ${getGasCost(gasData.fast)} ETH</div>
-                </div>
-              </div>
-
-              <div className={`bg-black/20 backdrop-blur-sm p-6 rounded-lg border ${
-                recommendation === 'instant' ? 'border-red-500/50 bg-red-900/10' : 'border-lime-800/30'
-              }`}>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-medium text-white">Instant</h3>
-                  {recommendation === 'instant' && (
-                    <span className="bg-red-600 text-white text-xs px-2 py-1 rounded">
-                      Recommended
-                    </span>
-                  )}
-                </div>
-                <div className="text-3xl font-bold text-red-400 mb-1">
-                  {gasData.instant.toFixed(1)} gwei
-                </div>
-                <div className="text-lime-300 text-sm space-y-1">
-                  <div>⏱️ {getConfirmationTime(gasData.instant)}</div>
-                  <div>💰 ${getGasCost(gasData.instant)} ETH</div>
-                </div>
-              </div>
+              <GasPriceCard 
+                type="Slow" 
+                price={gasData.slow} 
+                color="green" 
+                isRecommended={recommendation === 'slow'} 
+              />
+              <GasPriceCard 
+                type="Standard" 
+                price={gasData.standard} 
+                color="yellow" 
+                isRecommended={recommendation === 'standard'} 
+              />
+              <GasPriceCard 
+                type="Fast" 
+                price={gasData.fast} 
+                color="orange" 
+                isRecommended={recommendation === 'fast'} 
+              />
+              <GasPriceCard 
+                type="Instant" 
+                price={gasData.instant} 
+                color="red" 
+                isRecommended={recommendation === 'instant'} 
+              />
             </>
           )}
         </div>

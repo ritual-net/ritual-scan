@@ -1,7 +1,7 @@
 # GCP Production Deployment Strategy
 ## Ritual Blockchain Explorer
 
-### 🎯 **DEPLOYMENT ARCHITECTURE OVERVIEW**
+###  **DEPLOYMENT ARCHITECTURE OVERVIEW**
 
 ```mermaid
 graph TB
@@ -17,7 +17,7 @@ graph TB
     K[Cloud Logging] --> D
 ```
 
-## 🚀 **PHASE 1: CORE INFRASTRUCTURE**
+##  **PHASE 1: CORE INFRASTRUCTURE**
 
 ### **Option A: Cloud Run (Recommended for Quick Deploy)**
 **Best for**: Fast deployment, auto-scaling, cost-effective
@@ -60,7 +60,7 @@ gcloud container clusters create ritual-explorer-cluster \
 kubectl apply -f k8s/deployment.yaml
 ```
 
-## 🔧 **PHASE 2: ENHANCED GCP CONFIGURATION**
+##  **PHASE 2: ENHANCED GCP CONFIGURATION**
 
 ### **A. Cloud Build CI/CD Pipeline**
 
@@ -127,7 +127,7 @@ gcloud run domain-mappings create \
   --domain ritual-explorer.your-domain.com
 ```
 
-## 🛡️ **PHASE 3: SECURITY & PERFORMANCE**
+## 🛡 **PHASE 3: SECURITY & PERFORMANCE**
 
 ### **A. Cloud Armor DDoS Protection**
 
@@ -173,7 +173,7 @@ gcloud alpha monitoring policies create \
   --condition-threshold-value 1
 ```
 
-## 📊 **PHASE 4: PERFORMANCE OPTIMIZATION**
+##  **PHASE 4: PERFORMANCE OPTIMIZATION**
 
 ### **A. Cloud SQL for Analytics Caching**
 
@@ -202,7 +202,7 @@ gcloud redis instances create ritual-explorer-redis \
   --redis-version=redis_6_x
 ```
 
-## 🌐 **DEPLOYMENT SCRIPTS**
+##  **DEPLOYMENT SCRIPTS**
 
 ### **Quick Deploy Script**
 
@@ -214,7 +214,7 @@ PROJECT_ID="your-project-id"
 SERVICE_NAME="ritual-explorer"
 REGION="us-central1"
 
-echo "🚀 Deploying Ritual Explorer to GCP..."
+echo " Deploying Ritual Explorer to GCP..."
 
 # Build and deploy
 gcloud builds submit --tag gcr.io/${PROJECT_ID}/${SERVICE_NAME} .
@@ -229,8 +229,8 @@ gcloud run deploy ${SERVICE_NAME} \
   --max-instances 10 \
   --set-env-vars NODE_ENV=production
 
-echo "✅ Deployment complete!"
-echo "🌐 Access your app at: $(gcloud run services describe ${SERVICE_NAME} --region=${REGION} --format='value(status.url)')"
+echo " Deployment complete!"
+echo " Access your app at: $(gcloud run services describe ${SERVICE_NAME} --region=${REGION} --format='value(status.url)')"
 ```
 
 ### **Environment Setup Script**
@@ -245,7 +245,7 @@ if [ -z "$PROJECT_ID" ]; then
   exit 1
 fi
 
-echo "🔧 Setting up GCP project: $PROJECT_ID"
+echo " Setting up GCP project: $PROJECT_ID"
 
 # Enable required APIs
 gcloud services enable run.googleapis.com
@@ -258,7 +258,7 @@ gcloud services enable redis.googleapis.com
 # Set default project
 gcloud config set project $PROJECT_ID
 
-echo "✅ GCP setup complete!"
+echo " GCP setup complete!"
 ```
 
 ## 💰 **COST OPTIMIZATION**
@@ -285,7 +285,7 @@ echo "✅ GCP setup complete!"
 4. **Use Cloud CDN** for static assets
 5. **Set up budget alerts** to monitor spending
 
-## 🚀 **RECOMMENDED DEPLOYMENT SEQUENCE**
+##  **RECOMMENDED DEPLOYMENT SEQUENCE**
 
 ### **Phase 1: MVP (Day 1)**
 ```bash
@@ -317,7 +317,7 @@ echo "✅ GCP setup complete!"
 - [ ] **Monitoring**: Set up uptime and error monitoring
 - [ ] **Backup**: Ensure RPC endpoint has redundancy
 
-## 🔗 **USEFUL COMMANDS**
+##  **USEFUL COMMANDS**
 
 ```bash
 # Check deployment status
@@ -333,4 +333,4 @@ gcloud run services update ritual-explorer --max-instances=20
 gcloud run services replace-traffic ritual-explorer --to-revisions=REVISION_NAME=100
 ```
 
-This deployment strategy ensures your Ritual Explorer is **production-ready**, **scalable**, and **cost-effective** while leveraging GCP's managed services for reliability and security! 🎯
+This deployment strategy ensures your Ritual Explorer is **production-ready**, **scalable**, and **cost-effective** while leveraging GCP's managed services for reliability and security! 
