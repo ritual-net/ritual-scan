@@ -245,7 +245,7 @@ class RealtimeWebSocketManager {
       }
     }, 2000) // Every 2 seconds
 
-    // Block polling as backup (every 5 seconds)
+    // Block polling as backup (every 2 seconds)
     this.blockCheckInterval = setInterval(async () => {
       try {
         const latestBlock = await rethClient.getLatestBlock()
@@ -258,7 +258,7 @@ class RealtimeWebSocketManager {
       } catch (error) {
         console.error(`❌ [${this.connectionId}] Block polling error:`, error)
       }
-    }, 5000) // Every 5 seconds
+    }, 2000) // Every 2 seconds
   }
 
   private notifyCallbacks(update: RealtimeUpdate) {

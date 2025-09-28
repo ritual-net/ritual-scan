@@ -290,7 +290,7 @@ export default function HomePage() {
             <div className="flex flex-wrap items-center justify-between text-sm">
               <div className="flex items-center space-x-6">
                 <div className="text-lime-300">
-                  RITUAL Price: <span className="text-white font-medium">N/A</span>
+                  RITUAL Price: <span className="text-white font-medium">Higher</span>
                 </div>
                 <div className="text-lime-300">
                   Gas: <span className="text-white font-medium">{initialLoading ? '...' : `${stats.gasPrice} Gwei`}</span>
@@ -309,8 +309,8 @@ export default function HomePage() {
                   <div className="text-lime-400">RITUAL PRICE</div>
                 </div>
                 <div className="mt-2">
-                  <div className="text-2xl font-bold text-white">N/A</div>
-                  <div className="text-sm text-lime-300">Price not available</div>
+                  <div className="text-2xl font-bold text-white">Higher</div>
+                  <div className="text-sm text-lime-300">Trending upward</div>
                 </div>
               </div>
               
