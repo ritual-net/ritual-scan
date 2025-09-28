@@ -15,8 +15,8 @@ CONTAINER_NAME := $(APP_NAME)-container
 NETWORK_NAME := $(APP_NAME)-network
 
 # Ports
-DEV_PORT := 3000
-PROD_PORT := 3000
+DEV_PORT := 3010
+PROD_PORT := 3010
 HEALTH_PORT := 3001
 
 # Environment
@@ -93,7 +93,7 @@ docker-dev-build: ## Build development Docker image
 docker-dev-run: docker-dev-build ## Run development container
 	@echo "$(GREEN)Starting development container...$(NC)"
 	docker run -it --rm \
-		-p 3000:3000 \
+		-p 3010:3000 \
 		-v $(PWD):/app \
 		-v /app/node_modules \
 		-v /app/.next \
@@ -121,7 +121,7 @@ docker-build: ## Build production Docker image
 docker-run: docker-build ## Run production container
 	@echo "$(GREEN)Starting production container...$(NC)"
 	docker run -d \
-		-p 3000:3000 \
+		-p 3010:3000 \
 		--name $(CONTAINER_NAME) \
 		--restart unless-stopped \
 		--env-file .env.production \
