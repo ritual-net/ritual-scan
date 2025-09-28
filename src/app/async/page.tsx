@@ -51,78 +51,40 @@ export default function AsyncPage() {
     try {
       setError(null)
       
-      console.log('🔍 [ASYNC DIAGNOSIS] Starting async transaction search...')
-      
       // Get recent blocks and filter for async transactions
       const recentBlocks = await rethClient.getRecentBlocks(10)
-      console.log(`🔍 [ASYNC DIAGNOSIS] Got ${recentBlocks.length} recent blocks`)
-      
       const asyncTxs: AsyncTransaction[] = []
-      const allTxs: any[] = []
       
       for (const block of recentBlocks) {
         if (block.transactions && Array.isArray(block.transactions)) {
-          console.log(`🔍 [ASYNC DIAGNOSIS] Block ${block.number} has ${block.transactions.length} transactions`)
-          
-          // Match transactions page approach - use transactions directly from block
+          // Use direct transactions from block like transactions page
           for (const tx of block.transactions.slice(0, 10)) {
             if (typeof tx === 'object' && tx.hash) {
-                  allTxs.push(tx)
-                  
-                  // Log transaction details for diagnosis
-                  console.log(`🔍 [ASYNC DIAGNOSIS] TX ${tx.hash.slice(0,10)}... - Type: ${tx.type}, From: ${tx.from?.slice(0,10)}..., To: ${tx.to?.slice(0,10)}...`)
-                  
-                  // RELAXED async filtering - try multiple criteria
-                  const isAsyncTx = (
-                    // Check transaction type
-                    tx.type === '0x11' || tx.type === '0x12' ||
-                    tx.type === RitualTransactionType.ASYNC_COMMITMENT ||
-                    tx.type === RitualTransactionType.ASYNC_SETTLEMENT ||
-                    // Check if it has async-related fields
-                    tx.commitmentTx || tx.settlementTx || tx.originTx ||
-                    // Check system accounts
-                    (tx.from && (
-                      tx.from === SYSTEM_ACCOUNTS.ASYNC_COMMITMENT ||
-                      tx.from === SYSTEM_ACCOUNTS.ASYNC_SETTLEMENT
-                    )) ||
-                    (tx.to && (
-                      tx.to === SYSTEM_ACCOUNTS.ASYNC_COMMITMENT ||
-                      tx.to === SYSTEM_ACCOUNTS.ASYNC_SETTLEMENT
-                    )) ||
-                    // Check if transaction has 'async' in input data
-                    (tx.input && tx.input.length > 10)
-                  )
-                  
-                  if (isAsyncTx) {
-                    console.log(`✅ [ASYNC DIAGNOSIS] Found async transaction: ${tx.hash}`)
-                    asyncTxs.push(tx as AsyncTransaction)
-                  }
+              // STRICT async filtering - only actual async commitment/settlement transactions
+              if (tx && (
+                  tx.type === RitualTransactionType.ASYNC_COMMITMENT ||
+                  tx.type === RitualTransactionType.ASYNC_SETTLEMENT ||
+                  // Only include if it has BOTH commitment/settlement fields AND is from/to ASYNC system accounts
+                  (tx.commitmentTx && (
+                    tx.from === SYSTEM_ACCOUNTS.ASYNC_COMMITMENT ||
+                    tx.from === SYSTEM_ACCOUNTS.ASYNC_SETTLEMENT ||
+                    (tx.to && (tx.to === SYSTEM_ACCOUNTS.ASYNC_COMMITMENT || tx.to === SYSTEM_ACCOUNTS.ASYNC_SETTLEMENT))
+                  )) ||
+                  (tx.settlementTx && (
+                    tx.from === SYSTEM_ACCOUNTS.ASYNC_COMMITMENT ||
+                    tx.from === SYSTEM_ACCOUNTS.ASYNC_SETTLEMENT ||
+                    (tx.to && (tx.to === SYSTEM_ACCOUNTS.ASYNC_COMMITMENT || tx.to === SYSTEM_ACCOUNTS.ASYNC_SETTLEMENT))
+                  ))
+                )) {
+                  asyncTxs.push(tx as AsyncTransaction)
                 }
-              } catch (txError) {
-                console.log(`Failed to fetch transaction ${txHash}:`, txError)
-              }
             }
           }
         }
       }
       
-      // Final diagnostic summary
-      console.log(`🔍 [ASYNC DIAGNOSIS] SUMMARY:`)
-      console.log(`   - Total blocks checked: ${recentBlocks.length}`)
-      console.log(`   - Total transactions found: ${allTxs.length}`)
-      console.log(`   - Async transactions found: ${asyncTxs.length}`)
-      console.log(`   - Transaction types seen:`, [...new Set(allTxs.map(tx => tx.type))])
-      console.log(`   - System accounts defined:`, SYSTEM_ACCOUNTS)
-      console.log(`   - RitualTransactionType constants:`, RitualTransactionType)
-      
-      // If no async txs found, show sample transaction for analysis
-      if (asyncTxs.length === 0 && allTxs.length > 0) {
-        console.log(`🔍 [ASYNC DIAGNOSIS] Sample transaction for analysis:`, allTxs[0])
-      }
-      
       setAsyncTransactions(asyncTxs.slice(0, 20))
     } catch (err) {
-      console.error('🚨 [ASYNC DIAGNOSIS] Error loading async transactions:', err)
       setError(err instanceof Error ? err.message : 'Failed to load async transactions')
     } finally {
       setInitialLoading(false)
@@ -237,6 +199,13 @@ export default function AsyncPage() {
                 <option value="commitment">Commitments (0x11)</option>
                 <option value="settlement">Settlements (0x12)</option>
               </select>
+              <button 
+                onClick={loadAsyncTransactions}
+                disabled={initialLoading || isUpdating}
+                className="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 disabled:opacity-50 transition-colors"
+              >
+                {initialLoading ? 'Loading...' : isUpdating ? 'Updating...' : 'Refresh Async Transactions'}
+              </button>
             </div>
           </div>
         </div>
