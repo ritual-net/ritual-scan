@@ -345,12 +345,7 @@ export default function AnalyticsPage() {
                   </>
                 )}
               </button>
-              <Link 
-                href="/ritual-analytics"
-                className="px-6 py-3 bg-lime-600 text-white rounded-lg hover:bg-lime-700 transition-colors font-medium"
-              >
-                View Ritual Analytics →
-              </Link>
+
             </div>
           </div>
         </div>
@@ -936,81 +931,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Ritual Analytics Dashboard */}
-        <div className="mt-8 mb-8">
-          <h2 className="text-2xl font-bold text-white mb-6">Ritual Chain Analytics</h2>
-          
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-black/20 backdrop-blur-sm rounded-lg p-6 border border-yellow-500/30">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-yellow-400 text-sm font-medium">Async Adoption Rate</div>
-                <div className="text-yellow-400">⚡</div>
-              </div>
-              <div className="text-3xl font-bold text-white mb-1">7.97%</div>
-              <div className="text-yellow-300 text-xs">12,483 of 156,742 transactions</div>
-            </div>
 
-            <div className="bg-black/20 backdrop-blur-sm rounded-lg p-6 border border-green-500/30">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-green-400 text-sm font-medium">Active Scheduled Jobs</div>
-                <div className="text-green-400">🔄</div>
-              </div>
-              <div className="text-3xl font-bold text-white mb-1">234</div>
-              <div className="text-green-300 text-xs">98.40% success rate</div>
-            </div>
-
-            <div className="bg-black/20 backdrop-blur-sm rounded-lg p-6 border border-orange-500/30">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-orange-400 text-sm font-medium">Avg Settlement Time</div>
-                <div className="text-orange-400">⏱️</div>
-              </div>
-              <div className="text-3xl font-bold text-white mb-1">2.3 blocks</div>
-              <div className="text-orange-300 text-xs">Time from commitment to settlement</div>
-            </div>
-
-            <div className="bg-black/20 backdrop-blur-sm rounded-lg p-6 border border-blue-500/30">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-blue-400 text-sm font-medium">Protocol Fees</div>
-                <div className="text-blue-400">💰</div>
-              </div>
-              <div className="text-3xl font-bold text-white mb-1">45.67 RITUAL</div>
-              <div className="text-blue-300 text-xs">Total fees collected</div>
-            </div>
-          </div>
-
-          {/* Transaction Type Distribution Chart */}
-          <div className="bg-black/20 backdrop-blur-sm rounded-lg p-6 border border-lime-500/30 overflow-hidden">
-            <h3 className="text-xl font-semibold text-white mb-4">Transaction Type Distribution</h3>
-            <div className="w-full h-80 min-h-0">
-              <Plot
-                data={[{
-                  values: [89456, 50986, 3847, 6241, 6242],
-                  labels: ['Legacy (0x0)', 'EIP-1559 (0x2)', 'Scheduled (0x10)', 'AsyncCommitment (0x11)', 'AsyncSettlement (0x12)'],
-                  type: 'pie',
-                  textinfo: 'label+percent',
-                  textposition: 'outside',
-                  marker: {
-                    colors: ['#8B5A2B', '#1E40AF', '#059669', '#DC2626', '#16A34A']
-                  },
-                  hole: 0.3
-                }]}
-                layout={{
-                  ...plotLayout,
-                  title: { text: 'Transaction Types Distribution', font: { color: ritualColors.text, size: 16 } },
-                  showlegend: true,
-                  legend: {
-                    font: { color: ritualColors.text },
-                    bgcolor: 'transparent'
-                  }
-                }}
-                config={plotConfig}
-                className="w-full h-full"
-                useResizeHandler={true}
-              />
-            </div>
-          </div>
-        </div>
 
         {/* Pearson Correlation Matrices */}
         <div className="mt-8">
