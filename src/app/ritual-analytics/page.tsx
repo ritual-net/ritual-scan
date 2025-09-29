@@ -50,11 +50,18 @@ export default function RitualAnalyticsPage() {
       setError(null)
       
       // Get real data from blockchain
+      console.log('🔍 Loading real analytics data...')
       const [latestBlock, recentBlocks, scheduledTxs] = await Promise.all([
         rethClient.getLatestBlockNumber(),
         rethClient.getRecentBlocks(100), // Analyze more blocks for better stats
         rethClient.getScheduledTransactions()
       ])
+      
+      console.log('📊 Loaded data:', { 
+        latestBlock, 
+        blocksCount: recentBlocks.length, 
+        scheduledCount: scheduledTxs.length 
+      })
 
       // Process all transactions from recent blocks to get real statistics
       let totalTransactions = 0
@@ -152,6 +159,13 @@ export default function RitualAnalyticsPage() {
         scheduledJobSuccessRate: 97.8, // Estimate - would need execution tracking
         recentActivity: recentActivity.reverse() // Most recent first
       }
+      
+      console.log('📈 Computed real analytics:', {
+        totalTransactions,
+        asyncAdoptionRate: asyncAdoptionRate.toFixed(2) + '%',
+        activeScheduledJobs,
+        totalProtocolFees: totalProtocolFees.toFixed(2)
+      })
       
       setAnalytics(realAnalytics)
     } catch (err) {
