@@ -10,9 +10,45 @@ export function ParticleToggleSimple() {
     // Load saved preference from localStorage
     const saved = localStorage.getItem('particleBackgroundEnabled');
     if (saved !== null) {
-      setIsEnabled(JSON.parse(saved));
+      const enabled = JSON.parse(saved);
+      setIsEnabled(enabled);
+      
+      // Apply the saved state to any existing canvas
+      const applyCanvasState = () => {
+        const canvas = document.getElementById('particle-bg');
+        if (canvas) {
+          canvas.style.display = enabled ? 'block' : 'none';
+        }
+      };
+      
+      applyCanvasState();
+      
+      // Check periodically for canvas creation (in case it loads after this component)
+      const interval = setInterval(applyCanvasState, 500);
+      
+      // Clean up after 5 seconds
+      setTimeout(() => clearInterval(interval), 5000);
     }
   }, []);
+
+  // Monitor for canvas changes and apply state
+  useEffect(() => {
+    const applyCanvasState = () => {
+      const canvas = document.getElementById('particle-bg');
+      if (canvas) {
+        canvas.style.display = isEnabled ? 'block' : 'none';
+      }
+    };
+
+    // Apply immediately
+    applyCanvasState();
+
+    // Set up observer for DOM changes to catch when canvas is added
+    const observer = new MutationObserver(applyCanvasState);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, [isEnabled]);
 
   const toggleParticles = () => {
     const newState = !isEnabled;

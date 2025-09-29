@@ -11,8 +11,20 @@ export function BackgroundAudio() {
   const [showControls, setShowControls] = useState(false);
   const [volumeLevel, setVolumeLevel] = useState(0.15);
 
+  // Load saved volume from localStorage on mount
+  useEffect(() => {
+    const savedVolume = localStorage.getItem('backgroundMusicVolume');
+    if (savedVolume !== null) {
+      const volume = parseFloat(savedVolume);
+      setVolumeLevel(volume);
+      setVolume(volume);
+    }
+  }, [setVolume]);
+
   useEffect(() => {
     setVolume(volumeLevel);
+    // Save volume to localStorage whenever it changes
+    localStorage.setItem('backgroundMusicVolume', volumeLevel.toString());
   }, [volumeLevel, setVolume]);
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {

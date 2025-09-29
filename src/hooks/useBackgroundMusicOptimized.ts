@@ -21,6 +21,14 @@ export function useBackgroundMusicOptimized(
   const [isPlaying, setIsPlaying] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
   const [currentVolume, setCurrentVolume] = useState(defaultVolume)
+
+  // Load saved play state from localStorage on mount
+  useEffect(() => {
+    const savedPlayState = localStorage.getItem('backgroundMusicPlaying');
+    if (savedPlayState !== null) {
+      setIsPlaying(JSON.parse(savedPlayState));
+    }
+  }, []);
   
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -111,22 +119,25 @@ export function useBackgroundMusicOptimized(
       } else if (audioRef.current) {
         await audioRef.current.play()
         setIsPlaying(true)
+        localStorage.setItem('backgroundMusicPlaying', 'true');
       }
     } catch (error) {
       console.warn('Audio play failed:', error)
     }
-  }, [enableWebAudio, initializeAudio])
+  }, [enableWebAudio])
 
   // Optimized pause function
-  const pause = useCallback(() => {
+  const pause = useCallback(async () => {
     try {
       if (enableWebAudio && sourceRef.current) {
         sourceRef.current.stop()
         sourceRef.current = null
         setIsPlaying(false)
+        localStorage.setItem('backgroundMusicPlaying', 'false');
       } else if (audioRef.current) {
         audioRef.current.pause()
         setIsPlaying(false)
+        localStorage.setItem('backgroundMusicPlaying', 'false');
       }
     } catch (error) {
       console.warn('Audio pause failed:', error)
@@ -135,11 +146,14 @@ export function useBackgroundMusicOptimized(
 
   // Toggle play/pause
   const toggle = useCallback(() => {
+    const newPlayState = !isPlaying;
     if (isPlaying) {
       pause()
     } else {
       play()
     }
+    // Save play state to localStorage
+    localStorage.setItem('backgroundMusicPlaying', JSON.stringify(newPlayState));
   }, [isPlaying, play, pause])
 
   // Optimized volume control
