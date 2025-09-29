@@ -5,7 +5,7 @@ import { Navigation } from '@/components/Navigation'
 import { getRealtimeManager } from '@/lib/realtime-websocket'
 import Link from 'next/link'
 import SearchBar from '@/components/SearchBar'
-import { useParticleBackgroundOptimized } from '@/hooks/useParticleBackgroundOptimized'
+import { useParticleBackground } from '@/hooks/useParticleBackground'
 
 interface BlockchainStats {
   latestBlock: number
@@ -27,15 +27,10 @@ export default function HomePage() {
   const [isPending, startTransition] = useTransition()
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
 
-  // Add optimized particle background with adaptive quality
-  const quality = typeof navigator !== 'undefined' && navigator.hardwareConcurrency > 4 ? 'high' : 'medium'
-  const maxFPS = typeof navigator !== 'undefined' && /Mobile|Android|iPhone/.test(navigator.userAgent) ? 30 : 60
-  
-  useParticleBackgroundOptimized({ 
+  // Add particle background (using working implementation)
+  useParticleBackground({ 
     color: '#346d22', 
-    opacity: 0.25,
-    quality: quality as 'low' | 'medium' | 'high',
-    maxFPS 
+    opacity: 0.25
   })
 
   useEffect(() => {
