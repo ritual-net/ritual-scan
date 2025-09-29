@@ -1,10 +1,13 @@
 'use client'
 import { useState, useEffect } from 'react';
-import { useBackgroundMusic } from '@/hooks/useBackgroundMusic';
+import { useBackgroundMusicOptimized } from '@/hooks/useBackgroundMusicOptimized';
 import { Volume2, VolumeX, Music } from 'lucide-react';
 
 export function BackgroundAudio() {
-  const { isPlaying, isLoaded, toggle, setVolume, currentVolume } = useBackgroundMusic('/anninimouse.mp3', 0.15);
+  const { isPlaying, isLoaded, toggle, setVolume, currentVolume } = useBackgroundMusicOptimized('/anninimouse.mp3', 0.15, {
+    preload: true,
+    enableWebAudio: true
+  });
   const [showControls, setShowControls] = useState(false);
   const [volumeLevel, setVolumeLevel] = useState(0.15);
 
