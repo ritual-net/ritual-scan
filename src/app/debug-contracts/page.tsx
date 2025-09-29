@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { getDeployedContracts, GenesisScanner } from '@/lib/genesis-scanner'
+import { useParticleBackground } from '@/hooks/useParticleBackground'
 
 export default function DebugContractsPage() {
+  useParticleBackground()
   const [contracts, setContracts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [logs, setLogs] = useState<string[]>([])

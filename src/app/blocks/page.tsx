@@ -5,6 +5,7 @@ import { rethClient } from '@/lib/reth-client'
 import { Navigation } from '@/components/Navigation'
 import { getRealtimeManager } from '@/lib/realtime-websocket'
 import Link from 'next/link'
+import { useParticleBackground } from '@/hooks/useParticleBackground'
 
 interface Block {
   number: string
@@ -18,6 +19,7 @@ interface Block {
 }
 
 export default function BlocksPage() {
+  useParticleBackground()
   const [blocks, setBlocks] = useState<Block[]>([])
   const [initialLoading, setInitialLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)

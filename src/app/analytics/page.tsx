@@ -6,6 +6,7 @@ import { rethClient } from '@/lib/reth-client'
 import { Navigation } from '@/components/Navigation'
 import { getRealtimeManager } from '@/lib/realtime-websocket'
 import Link from 'next/link'
+import { useParticleBackground } from '@/hooks/useParticleBackground'
 
 // Dynamic import to avoid SSR issues with Plotly
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false }) as any
@@ -27,6 +28,7 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
+  useParticleBackground()
   const [data, setData] = useState<AnalyticsData>({
     blocks: [],
     avgGasUsed: [],

@@ -6,6 +6,7 @@ import { useTransactionUpdates, useRealtimeStatus, useMempoolUpdates } from '@/h
 import { TransactionTypeBadge, SystemAccountBadge } from '@/components/TransactionTypeBadge'
 import { Navigation } from '@/components/Navigation'
 import Link from 'next/link'
+import { useParticleBackground } from '@/hooks/useParticleBackground'
 
 interface AsyncTransaction {
   hash: string
@@ -23,6 +24,7 @@ interface AsyncTransaction {
 }
 
 export default function AsyncPage() {
+  useParticleBackground()
   const [asyncTransactions, setAsyncTransactions] = useState<AsyncTransaction[]>([])
   const [initialLoading, setInitialLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)

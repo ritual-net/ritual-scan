@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { rethClient, RpcConfig } from '@/lib/reth-client'
 import { Navigation } from '@/components/Navigation'
 import Link from 'next/link'
+import { useParticleBackground } from '@/hooks/useParticleBackground'
 
 interface ConnectionTest {
   success: boolean
@@ -13,6 +14,7 @@ interface ConnectionTest {
 }
 
 export default function SettingsPage() {
+  useParticleBackground()
   const [config, setConfig] = useState<RpcConfig>({ primary: '', backup: '', websocket: '', name: '' })
   const [loading, setLoading] = useState(false)
   const [testResults, setTestResults] = useState<Record<string, ConnectionTest>>({})

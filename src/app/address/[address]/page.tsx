@@ -5,6 +5,7 @@ import { rethClient } from '@/lib/reth-client'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { Navigation } from '@/components/Navigation'
+import { useParticleBackground } from '@/hooks/useParticleBackground'
 
 interface AddressInfo {
   address: string
@@ -28,6 +29,7 @@ interface Transaction {
 }
 
 export default function AddressPage() {
+  useParticleBackground()
   const params = useParams()
   const address = params.address as string
   const [addressInfo, setAddressInfo] = useState<AddressInfo | null>(null)

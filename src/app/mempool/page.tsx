@@ -6,6 +6,7 @@ import { Navigation } from '@/components/Navigation'
 import { useMempoolUpdates, useTransactionUpdates, useRealtimeStatus } from '@/hooks/useRealtime'
 import { TransactionTypeChip, TransactionTypeLegend } from '@/components/TransactionTypeChip'
 import Link from 'next/link'
+import { useParticleBackground } from '@/hooks/useParticleBackground'
 
 interface MempoolTransaction {
   hash: string
@@ -27,6 +28,7 @@ interface MempoolStats {
 }
 
 export default function MempoolPage() {
+  useParticleBackground()
   const [transactions, setTransactions] = useState<MempoolTransaction[]>([])
   const [stats, setStats] = useState<MempoolStats>({
     pending: 0,

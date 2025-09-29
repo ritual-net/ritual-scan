@@ -5,6 +5,7 @@ import { rethClient, RitualTransactionType } from '@/lib/reth-client'
 import { TransactionTypeChip } from '@/components/TransactionTypeChip'
 // import { RitualEventSummary } from '@/components/RitualEventDisplayProduction'
 import Link from 'next/link'
+import { useParticleBackground } from '@/hooks/useParticleBackground'
 
 interface BlockDetail {
   number: string
@@ -43,6 +44,7 @@ interface TransactionTypeCounts {
 }
 
 export default function BlockDetailPage({ params }: PageProps) {
+  useParticleBackground()
   const [block, setBlock] = useState<BlockDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

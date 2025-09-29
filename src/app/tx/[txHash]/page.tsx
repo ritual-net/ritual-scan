@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { TransactionTypeChip } from '@/components/TransactionTypeChip'
 import { RitualEventDisplay, RitualTransactionCategoryBadge, RitualPrecompileIndicator } from '@/components/RitualEventDisplayProduction'
 import { Navigation } from '@/components/Navigation'
+import { useParticleBackground } from '@/hooks/useParticleBackground'
 
 interface TransactionReceipt {
   status: string
@@ -32,6 +33,7 @@ interface PageProps {
 }
 
 export default function TransactionDetailPage({ params }: PageProps) {
+  useParticleBackground()
   const [transaction, setTransaction] = useState<EnhancedTransaction | null>(null)
   const [receipt, setReceipt] = useState<TransactionReceipt | null>(null)
   const [loading, setLoading] = useState(true)

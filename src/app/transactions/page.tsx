@@ -6,6 +6,7 @@ import { Navigation } from '@/components/Navigation'
 import { getRealtimeManager } from '@/lib/realtime-websocket'
 import { TransactionTypeChip, TransactionTypeLegend } from '@/components/TransactionTypeChip'
 import Link from 'next/link'
+import { useParticleBackground } from '@/hooks/useParticleBackground'
 
 interface Transaction {
   hash: string
@@ -21,6 +22,7 @@ interface Transaction {
 }
 
 export default function TransactionsPage() {
+  useParticleBackground()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [initialLoading, setInitialLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { rethClient, RitualTransactionType } from '@/lib/reth-client'
 import { Navigation } from '@/components/Navigation'
 import Link from 'next/link'
+import { useParticleBackground } from '@/hooks/useParticleBackground'
 
 interface RitualAnalytics {
   totalTransactions: number
@@ -28,6 +29,7 @@ interface RitualAnalytics {
 }
 
 export default function RitualAnalyticsPage() {
+  useParticleBackground()
   const [analytics, setAnalytics] = useState<RitualAnalytics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

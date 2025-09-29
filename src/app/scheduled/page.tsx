@@ -7,6 +7,7 @@ import { getRealtimeManager } from '@/lib/realtime-websocket'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { TransactionTypeBadge } from '@/components/TransactionTypeBadge'
+import { useParticleBackground } from '@/hooks/useParticleBackground'
 
 interface ScheduledTransaction {
   type: string
@@ -30,6 +31,7 @@ interface ScheduledPageProps {
 }
 
 export default function ScheduledPage({ searchParams }: ScheduledPageProps) {
+  useParticleBackground()
   const [scheduledTxs, setScheduledTxs] = useState<ScheduledTransaction[]>([])
   const [filteredTxs, setFilteredTxs] = useState<ScheduledTransaction[]>([])
   const [initialLoading, setInitialLoading] = useState(true)

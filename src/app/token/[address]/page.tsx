@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { rethClient } from '@/lib/reth-client'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { useParticleBackground } from '@/hooks/useParticleBackground'
 
 interface TokenInfo {
   address: string
@@ -26,6 +27,7 @@ interface TokenTransfer {
 }
 
 export default function TokenPage() {
+  useParticleBackground()
   const params = useParams()
   const address = params.address as string
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
