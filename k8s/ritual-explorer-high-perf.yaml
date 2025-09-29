@@ -1,0 +1,128 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ritual-explorer-storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ritual-explorer-high-perf
+  labels:
+    app: ritual-explorer-high-perf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ritual-explorer-high-perf
+  template:
+    metadata:
+      labels:
+        app: ritual-explorer-high-perf
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: high-perf-pool
+      imagePullSecrets:
+      - name: gcr-json-key
+      containers:
+      - name: ritual-explorer
+        image: gcr.io/testing-logging-2/ritual-explorer:v2
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: NEXT_PUBLIC_DEFAULT_CHAIN
+          value: "ethereum"
+        - name: NEXT_PUBLIC_RETH_RPC_URL
+          value: "http://35.185.40.237:8545"
+        - name: NEXT_PUBLIC_RETH_WS_URL
+          value: "ws://35.185.40.237:8546"
+        - name: NEXT_TELEMETRY_DISABLED
+          value: "1"
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"  # 2 cores guaranteed
+          limits:
+            memory: "8Gi"  # 8GB RAM limit
+            cpu: "4000m"   # 4 cores max
+        volumeMounts:
+        - name: storage-volume
+          mountPath: /app/data
+        - name: tmp-volume
+          mountPath: /tmp
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: storage-volume
+        persistentVolumeClaim:
+          claimName: ritual-explorer-storage
+      - name: tmp-volume
+        emptyDir:
+          sizeLimit: 2Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ritual-explorer-high-perf-service
+  labels:
+    app: ritual-explorer-high-perf
+spec:
+  selector:
+    app: ritual-explorer-high-perf
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+    protocol: TCP
+  type: LoadBalancer
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ritual-explorer-high-perf-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ritual-explorer-high-perf
+  minReplicas: 1
+  maxReplicas: 3  # Limited by node capacity
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
