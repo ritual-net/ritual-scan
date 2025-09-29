@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
+import { BackgroundAudio } from "@/components/BackgroundAudio";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -79,6 +80,7 @@ export default function RootLayout({
       >
         <Providers>
           {children}
+          <BackgroundAudio />
           <Toaster />
         </Providers>
       </body>
