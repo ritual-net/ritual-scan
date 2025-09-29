@@ -169,17 +169,27 @@ export function useBackgroundMusicOptimized(
     }
   }, [enableWebAudio])
 
-  // Auto-play on user interaction (optimized)
+  // Auto-play on user interaction (optimized) - only if user previously had music playing
   useEffect(() => {
     if (!isLoaded) return
     
     let hasInteracted = false
     
     const handleInteraction = () => {
-      if (!hasInteracted && !isPlaying) {
+      // Check if user previously had music playing
+      const savedPlayState = localStorage.getItem('backgroundMusicPlaying');
+      const shouldAutoPlay = savedPlayState === 'true';
+      
+      if (!hasInteracted && !isPlaying && shouldAutoPlay) {
         hasInteracted = true
         play()
         // Remove listeners after first interaction for performance
+        document.removeEventListener('click', handleInteraction)
+        document.removeEventListener('keydown', handleInteraction)
+        document.removeEventListener('touchstart', handleInteraction)
+      } else if (!hasInteracted) {
+        // Still remove listeners even if we don't auto-play
+        hasInteracted = true
         document.removeEventListener('click', handleInteraction)
         document.removeEventListener('keydown', handleInteraction)
         document.removeEventListener('touchstart', handleInteraction)

@@ -7,27 +7,15 @@ export function ParticleToggleSimple() {
   const [showControls, setShowControls] = useState(false);
 
   useEffect(() => {
-    // Load saved preference from localStorage
+    // Load saved preference from localStorage on mount
     const saved = localStorage.getItem('particleBackgroundEnabled');
     if (saved !== null) {
       const enabled = JSON.parse(saved);
       setIsEnabled(enabled);
-      
-      // Apply the saved state to any existing canvas
-      const applyCanvasState = () => {
-        const canvas = document.getElementById('particle-bg');
-        if (canvas) {
-          canvas.style.display = enabled ? 'block' : 'none';
-        }
-      };
-      
-      applyCanvasState();
-      
-      // Check periodically for canvas creation (in case it loads after this component)
-      const interval = setInterval(applyCanvasState, 500);
-      
-      // Clean up after 5 seconds
-      setTimeout(() => clearInterval(interval), 5000);
+    } else {
+      // Default to enabled if no preference saved
+      setIsEnabled(true);
+      localStorage.setItem('particleBackgroundEnabled', 'true');
     }
   }, []);
 
@@ -37,17 +25,33 @@ export function ParticleToggleSimple() {
       const canvas = document.getElementById('particle-bg');
       if (canvas) {
         canvas.style.display = isEnabled ? 'block' : 'none';
+        console.log('Applied particle state:', isEnabled ? 'enabled' : 'disabled');
       }
     };
 
     // Apply immediately
     applyCanvasState();
 
+    // Set up periodic checks for canvas creation
+    const interval = setInterval(applyCanvasState, 100);
+
     // Set up observer for DOM changes to catch when canvas is added
-    const observer = new MutationObserver(applyCanvasState);
+    const observer = new MutationObserver(() => {
+      setTimeout(applyCanvasState, 50); // Small delay to ensure canvas is fully created
+    });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    return () => observer.disconnect();
+    // Clean up after 10 seconds
+    const cleanup = setTimeout(() => {
+      clearInterval(interval);
+      observer.disconnect();
+    }, 10000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(cleanup);
+      observer.disconnect();
+    };
   }, [isEnabled]);
 
   const toggleParticles = () => {
