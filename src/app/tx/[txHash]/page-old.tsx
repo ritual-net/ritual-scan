@@ -75,13 +75,13 @@ export default function TransactionDetailPage({ params }: PageProps) {
   }
 
   const formatValue = (value: string) => {
-    if (!value || value === '0x0') return '0 ETH'
+    if (!value || value === '0x0') return '0 RITUAL'
     try {
       const wei = parseInt(value, 16)
-      const eth = wei / 1e18
-      return `${eth.toFixed(6)} ETH`
+      const ritual = wei / 1e18
+      return `${ritual.toFixed(6)} RITUAL`
     } catch {
-      return '0 ETH'
+      return '0 RITUAL'
     }
   }
 

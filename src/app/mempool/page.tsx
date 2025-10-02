@@ -50,7 +50,7 @@ export default function MempoolPage() {
     // Set up polling interval for mempool data
     const interval = setInterval(() => {
       silentUpdate()
-    }, 3000) // Poll every 3 seconds
+    }, 1000) // Poll every 1 second
     
     return () => clearInterval(interval)
   }, [])
@@ -206,9 +206,6 @@ export default function MempoolPage() {
                   <span>HTTP POLLING</span>
                 </div>
               </div>
-              <p className="text-lime-200">
-                HTTP polling mempool updates • Refreshes every 3 seconds
-              </p>
               <div className="mt-4 p-3 bg-white/5 border border-lime-500/20 rounded-lg">
                 <TransactionTypeLegend />
               </div>

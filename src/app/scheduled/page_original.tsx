@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, useTransition } from 'react'
+import { useState, useEffect, use, useCallback, useTransition } from 'react'
 import { rethClient } from '@/lib/reth-client'
 import { Navigation } from '@/components/Navigation'
 import { getRealtimeManager } from '@/lib/realtime-websocket'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { TransactionTypeBadge } from '@/components/TransactionTypeBadge'
 import { useParticleBackground } from '@/hooks/useParticleBackground'
 
@@ -23,7 +24,13 @@ interface ScheduledTransaction {
   from: string
 }
 
-export default function ScheduledPage() {
+interface ScheduledPageProps {
+  searchParams?: Promise<{
+    callId?: string
+  }>
+}
+
+export default function ScheduledPage({ searchParams }: ScheduledPageProps) {
   useParticleBackground()
   const [scheduledTxs, setScheduledTxs] = useState<ScheduledTransaction[]>([])
   const [filteredTxs, setFilteredTxs] = useState<ScheduledTransaction[]>([])
@@ -32,8 +39,10 @@ export default function ScheduledPage() {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
-  const [searchCallId, setSearchCallId] = useState('')
-  const [lastUpdateDisplay, setLastUpdateDisplay] = useState<string>('')
+  
+  // Fix Next.js 15 searchParams issue - unwrap the promise
+  const params = searchParams ? use(searchParams) : {}
+  const [searchCallId, setSearchCallId] = useState(params?.callId || '')
 
   useEffect(() => {
     loadScheduledTransactions()
@@ -46,10 +55,13 @@ export default function ScheduledPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Silent update for polling
+  // HTTP polling-based update function
   const silentUpdate = useCallback(async () => {
     const now = Date.now()
-    if (now - lastUpdateTime < 2000) return // Throttle to max 1 update per 2 seconds
+    if (now - lastUpdateTime < 2000) return // Max 1 update per 2 seconds
+    
+    setLastUpdateTime(now)
+    setIsUpdating(true)
     
     try {
       startTransition(async () => {
@@ -62,21 +74,62 @@ export default function ScheduledPage() {
     }
   }, [lastUpdateTime])
 
+  /*
+  // Old WebSocket code - now using HTTP polling instead
   useEffect(() => {
-    filterTransactions(scheduledTxs, searchCallId)
-  }, [scheduledTxs, searchCallId])
-
-  useEffect(() => {
-    // Update display time only on client side to avoid hydration mismatch
-    const updateDisplayTime = () => {
-      const now = new Date()
-      setLastUpdateDisplay(`Last updated: ${now.toLocaleTimeString()}`)
+    loadScheduledTransactions()
+    
+    // Set up realtime updates using WebSocket manager
+    const realtimeManager = getRealtimeManager()
+    const unsubscribe = realtimeManager?.subscribe('scheduled-page', (update) => {
+      if (update.type === 'newBlock') {
+        console.log('📅 [Scheduled] New block received:', update.data)
+        silentUpdate(update.data)
+      }
+    })
+    
+    // Auto-refresh every 30 seconds (longer than others since scheduled txs change less frequently)
+    const interval = setInterval(() => silentUpdate(), 30000)
+    
+    return () => {
+      if (unsubscribe) {
+        unsubscribe()
+      }
+      clearInterval(interval)
     }
+  }, [])
+
+  // High-performance silent update for real-time changes
+  const silentUpdate = useCallback(async (newBlockData?: any) => {
+    const now = Date.now()
+    if (now - lastUpdateTime < 3000) return // Max 1 update per 3 seconds
     
-    updateDisplayTime()
-    const interval = setInterval(updateDisplayTime, 30000) // Update every 30 seconds
+    setLastUpdateTime(now)
+    setIsUpdating(true)
     
-    return () => clearInterval(interval)
+    try {
+      startTransition(async () => {
+        const scheduledTransactions = await rethClient.getScheduledTransactions()
+        
+        setScheduledTxs(prevTxs => {
+          // Smart merge - only update if we have different transactions
+          if (scheduledTransactions.length !== prevTxs.length) {
+            return scheduledTransactions
+          }
+          
+          // Check if any transaction hashes are different
+          const hasChanged = scheduledTransactions.some((newTx, index) => 
+            newTx.hash !== prevTxs[index]?.hash
+          )
+          
+          return hasChanged ? scheduledTransactions : prevTxs
+        })
+      })
+    } catch (error) {
+      console.warn('Silent scheduled update failed:', error)
+    } finally {
+      setIsUpdating(false)
+    }
   }, [lastUpdateTime])
 
   const loadScheduledTransactions = async () => {
@@ -104,6 +157,10 @@ export default function ScheduledPage() {
     setFilteredTxs(filtered)
   }
 
+  useEffect(() => {
+    filterTransactions(scheduledTxs, searchCallId)
+  }, [scheduledTxs, searchCallId])
+
   const formatValue = (value: string) => {
     try {
       if (!value || value === '0x0') return '0'
@@ -119,12 +176,17 @@ export default function ScheduledPage() {
     return `${hash.slice(0, 10)}...${hash.slice(-8)}`
   }
 
+  const getTimeSinceLastUpdate = () => {
+    const now = new Date()
+    return `Last updated: ${now.toLocaleTimeString()}`
+  }
 
   return (
     <div className="min-h-screen bg-black">
       <Navigation currentPage="scheduled" />
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
+        <div className="mb-6">
           <nav className="flex items-center space-x-2 text-sm text-lime-400 mb-4">
             <Link href="/" className="hover:text-lime-200">Home</Link>
             <span>→</span>
@@ -133,46 +195,30 @@ export default function ScheduledPage() {
           
           <div className="flex items-center justify-between">
             <div>
-              <div className="flex items-center space-x-3 mb-2">
-                <h1 className="text-3xl font-bold text-white">Scheduled Transactions Pool</h1>
-                <div className="flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                  <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
-                  <span>HTTP POLLING</span>
-                </div>
-              </div>
+              <h1 className="text-3xl font-bold text-white mb-2">Scheduled Transactions Pool</h1>
               <p className="text-lime-200">
-                Ritual Chain scheduled transactions waiting for execution
+                Pending scheduled transactions waiting for execution
               </p>
             </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-white">
-                {initialLoading ? '...' : filteredTxs.length}
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchCallId}
+                  onChange={(e) => setSearchCallId(e.target.value)}
+                  placeholder="Filter by Call ID..."
+                  className="px-3 py-2 bg-black/50 border border-lime-500/30 rounded-md text-white placeholder-lime-300/60 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-lime-400 w-48"
+                />
+                {searchCallId && (
+                  <button
+                    onClick={() => setSearchCallId('')}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-lime-400 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
-              <div className="text-lime-400 text-sm">Scheduled Jobs</div>
             </div>
-          </div>
-        </div>
-
-        {/* Search Filter */}
-        <div className="mb-6">
-          <div className="flex items-center space-x-4">
-            <div className="flex-1">
-              <input
-                type="text"
-                placeholder="Search by Call ID..."
-                value={searchCallId}
-                onChange={(e) => setSearchCallId(e.target.value)}
-                className="w-full px-4 py-2 bg-white/5 border border-lime-500/20 rounded-lg text-white placeholder-lime-300/50 focus:outline-none focus:border-lime-500/50"
-              />
-            </div>
-            {searchCallId && (
-              <button
-                onClick={() => setSearchCallId('')}
-                className="px-4 py-2 text-lime-300 hover:text-white border border-lime-500/20 rounded-lg hover:border-lime-500/50"
-              >
-                Clear
-              </button>
-            )}
           </div>
         </div>
 
@@ -180,25 +226,16 @@ export default function ScheduledPage() {
           <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 mb-8">
             <h3 className="text-red-400 font-semibold">Error Loading Scheduled Transactions</h3>
             <p className="text-red-300 mt-2">{error}</p>
-            <button 
-              onClick={loadScheduledTransactions}
-              className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium"
-            >
-              Retry
-            </button>
           </div>
         )}
 
-        <div className="bg-black/50 border border-lime-500/20 rounded-lg overflow-hidden">
+        {/* Scheduled Transactions List */}
+        <div className="bg-white/5 border border-lime-500/20 rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-lime-500/20 flex items-center justify-between">
-            <h3 className="text-lg font-medium text-white">
-              Scheduled Transactions ({initialLoading ? '...' : filteredTxs.length})
-            </h3>
-            {lastUpdateDisplay && (
-              <div className="text-sm text-lime-300">
-                {lastUpdateDisplay}
-              </div>
-            )}
+            <h3 className="text-lg font-medium text-white">Pending Scheduled Transactions</h3>
+            <div className="text-sm text-lime-300">
+              {getTimeSinceLastUpdate()}
+            </div>
           </div>
 
           {initialLoading ? (

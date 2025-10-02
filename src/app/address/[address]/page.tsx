@@ -93,7 +93,7 @@ export default function AddressPage() {
 
       // Get balance
       const balance = await rethClient.rpcCall('eth_getBalance', [address, 'latest'])
-      const balanceEth = (parseInt(balance, 16) / 1e18).toFixed(6)
+      const balanceRitual = (parseInt(balance, 16) / 1e18).toFixed(6)
 
       // Get transaction count
       const txCount = await rethClient.rpcCall('eth_getTransactionCount', [address, 'latest'])
@@ -101,7 +101,7 @@ export default function AddressPage() {
 
       setAddressInfo({
         address,
-        balance: balanceEth,
+        balance: balanceRitual,
         transactionCount
       })
     } catch (error: any) {

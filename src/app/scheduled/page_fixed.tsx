@@ -33,7 +33,6 @@ export default function ScheduledPage() {
   const [isPending, startTransition] = useTransition()
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
   const [searchCallId, setSearchCallId] = useState('')
-  const [lastUpdateDisplay, setLastUpdateDisplay] = useState<string>('')
 
   useEffect(() => {
     loadScheduledTransactions()
@@ -57,24 +56,45 @@ export default function ScheduledPage() {
       })
     } catch (error) {
       console.warn('Silent scheduled update failed:', error)
-    } finally {
-      setIsUpdating(false)
     }
   }, [lastUpdateTime])
 
+  /*
+  // Old WebSocket code - now using HTTP polling instead
   useEffect(() => {
-    filterTransactions(scheduledTxs, searchCallId)
-  }, [scheduledTxs, searchCallId])
-
-  useEffect(() => {
-    // Update display time only on client side to avoid hydration mismatch
-    const updateDisplayTime = () => {
-      const now = new Date()
-      setLastUpdateDisplay(`Last updated: ${now.toLocaleTimeString()}`)
-    }
+    loadScheduledTransactions()
     
-    updateDisplayTime()
-    const interval = setInterval(updateDisplayTime, 30000) // Update every 30 seconds
+    // Set up realtime updates using WebSocket manager
+    const realtimeManager = getRealtimeManager()
+    if (!realtimeManager) return
+
+    const unsubscribe = realtimeManager.subscribe('scheduled-updates', (update) => {
+      if (update.type === 'scheduledUpdate') {
+        console.log('📧 Received scheduled transactions update:', update.data)
+        setScheduledTxs(update.data || [])
+        filterTransactions(update.data || [], searchCallId)
+        setLastUpdateTime(Date.now())
+      }
+    })
+
+    // Also set up periodic force refresh for scheduled data
+    const interval = setInterval(() => {
+      realtimeManager.forceRefresh('scheduled')
+    }, 15000) // Every 15 seconds
+
+    return () => {
+      if (unsubscribe) unsubscribe()
+      clearInterval(interval)
+    }
+  }, [searchCallId])
+  */
+
+  // Keep live timestamp display
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // This will cause a re-render to update the "time ago" displays
+      setLastUpdateTime(Date.now())
+    }, 30000) // Every 30 seconds
     
     return () => clearInterval(interval)
   }, [lastUpdateTime])
@@ -104,6 +124,10 @@ export default function ScheduledPage() {
     setFilteredTxs(filtered)
   }
 
+  useEffect(() => {
+    filterTransactions(scheduledTxs, searchCallId)
+  }, [scheduledTxs, searchCallId])
+
   const formatValue = (value: string) => {
     try {
       if (!value || value === '0x0') return '0'
@@ -119,37 +143,38 @@ export default function ScheduledPage() {
     return `${hash.slice(0, 10)}...${hash.slice(-8)}`
   }
 
+  const getTimeSinceLastUpdate = () => {
+    const now = new Date()
+    return `Last updated: ${now.toLocaleTimeString()}`
+  }
 
   return (
     <div className="min-h-screen bg-black">
       <Navigation currentPage="scheduled" />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <nav className="flex items-center space-x-2 text-sm text-lime-400 mb-4">
-            <Link href="/" className="hover:text-lime-200">Home</Link>
-            <span>→</span>
-            <span className="text-white">Scheduled Transactions</span>
-          </nav>
-          
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center space-x-3 mb-2">
-                <h1 className="text-3xl font-bold text-white">Scheduled Transactions Pool</h1>
-                <div className="flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                  <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
-                  <span>HTTP POLLING</span>
-                </div>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <div className="flex items-center space-x-3 mb-2">
+              <h1 className="text-3xl font-bold text-white">Scheduled Transactions Pool</h1>
+              <div className="flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
+                <span>HTTP POLLING</span>
               </div>
-              <p className="text-lime-200">
-                Ritual Chain scheduled transactions waiting for execution
-              </p>
             </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-white">
-                {initialLoading ? '...' : filteredTxs.length}
+            <p className="text-lime-200">
+              Ritual Chain scheduled transactions waiting for execution
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-white">
+              {initialLoading ? '...' : filteredTxs.length}
+            </div>
+            <div className="text-lime-400 text-sm">Scheduled Jobs</div>
+            {!initialLoading && (
+              <div className="text-lime-300 text-xs mt-1">
+                {getTimeSinceLastUpdate()}
               </div>
-              <div className="text-lime-400 text-sm">Scheduled Jobs</div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -190,65 +215,57 @@ export default function ScheduledPage() {
         )}
 
         <div className="bg-black/50 border border-lime-500/20 rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-lime-500/20 flex items-center justify-between">
-            <h3 className="text-lg font-medium text-white">
-              Scheduled Transactions ({initialLoading ? '...' : filteredTxs.length})
-            </h3>
-            {lastUpdateDisplay && (
-              <div className="text-sm text-lime-300">
-                {lastUpdateDisplay}
-              </div>
-            )}
-          </div>
-
           {initialLoading ? (
-            <div className="p-8 text-center">
+            <div className="p-12 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-lime-400 mb-4"></div>
               <p className="text-lime-200">Loading scheduled transactions...</p>
             </div>
           ) : filteredTxs.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-lime-300">No scheduled transactions found in pool</p>
+            <div className="p-12 text-center">
+              <p className="text-lime-300 text-lg">No scheduled transactions found</p>
               <p className="text-lime-400 text-sm mt-2">
-                Scheduled transactions appear here when waiting for execution
+                {searchCallId ? 'Try adjusting your search criteria' : 'The mempool appears to be empty'}
               </p>
             </div>
           ) : (
             <div className="divide-y divide-lime-500/10">
-              {filteredTxs.map((tx, index) => (
-                <div key={tx.hash || index} className="px-6 py-4 hover:bg-lime-500/5">
+              {filteredTxs.map((tx: any, index: number) => (
+                <div key={`scheduled-${tx.hash || tx.callId}-${index}`} className="p-6 hover:bg-lime-500/5">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center min-w-0 flex-1">
-                      <div className="flex-shrink-0">
-                        <div className="w-10 h-10 bg-lime-500/20 rounded-lg flex items-center justify-center border border-lime-500/30">
-                          <span className="text-lime-300 text-xs">Sched</span>
-                        </div>
-                      </div>
-                      <div className="ml-4 min-w-0 flex-1">
+                    <div className="flex items-center space-x-4">
+                      <TransactionTypeBadge type="scheduled" />
+                      <div>
                         <div className="flex items-center space-x-2">
                           <Link 
                             href={`/tx/${tx.hash}`}
-                            className="text-lime-300 hover:text-white font-mono text-sm truncate transition-colors"
+                            className="text-lime-300 hover:text-white font-mono text-sm"
                           >
                             {shortenHash(tx.hash)}
                           </Link>
-                          <TransactionTypeBadge type={tx.type} />
+                          <span className="text-lime-400 text-xs">Call ID: {tx.callId}</span>
                         </div>
-                        <div className="flex items-center space-x-4 mt-1 text-sm text-lime-400">
-                          <span>Call ID: {tx.callId}</span>
-                          <span>Index: {tx.index}</span>
-                          <span>Freq: {tx.frequency} blocks</span>
-                          {tx.to && <span>To: {shortenHash(tx.to)}</span>}
+                        <div className="text-sm text-lime-200 mt-1">
+                          Origin: <Link 
+                            href={`/tx/${tx.originTx}`}
+                            className="text-lime-300 hover:text-white font-mono"
+                          >
+                            {shortenHash(tx.originTx)}
+                          </Link>
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end space-y-1">
-                      <span className="text-sm font-medium text-white">
-                        {formatValue(tx.value)} RITUAL
-                      </span>
-                      <span className="text-xs text-lime-400">
-                        Max Block: {tx.maxBlock.toLocaleString()}
-                      </span>
+                    <div className="text-right">
+                      <div className="flex flex-col items-end space-y-1">
+                        <span className="text-sm font-medium text-white">
+                          {formatValue(tx.value)} RITUAL
+                        </span>
+                        <span className="text-xs text-lime-400">
+                          Max Block: {tx.maxBlock.toLocaleString()}
+                        </span>
+                        <span className="text-xs text-lime-300">
+                          Frequency: {tx.frequency}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

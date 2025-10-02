@@ -440,7 +440,7 @@ export default function TokenPage() {
                         </Link>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-white font-mono text-sm">
-                        {transfer.value} ETH
+                        {transfer.value} RITUAL
                       </td>
                     </tr>
                   ))

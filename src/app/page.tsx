@@ -33,6 +33,16 @@ export default function HomePage() {
   const realtimeStats = useRealtimeStats()
   const transactionFeed = useTransactionFeed(20)
 
+  // Debug WebSocket connection status
+  useEffect(() => {
+    console.log('🌐 WebSocket stats:', {
+      latestBlock: realtimeStats.latestBlock,
+      gasPrice: realtimeStats.gasPrice,
+      transactionCount: transactionFeed.length,
+      lastUpdate: new Date(realtimeStats.lastUpdate).toLocaleTimeString()
+    })
+  }, [realtimeStats, transactionFeed])
+
   // Add particle background (using working implementation)
   useParticleBackground({ 
     color: '#346d22', 
@@ -43,18 +53,44 @@ export default function HomePage() {
     loadStats()
   }, [])
 
-  // Tier 1: Merge real-time stats with local state
-  useEffect(() => {
-    if (realtimeStats.latestBlock > 0) {
+  // Lightweight block refresh for WebSocket updates
+  const refreshBlocks = useCallback(async () => {
+    try {
+      console.log('📊 Refreshing blocks via WebSocket trigger...')
+      const recentBlocks = await rethClient.getRecentBlocks(10)
+      console.log('📦 Updated blocks:', recentBlocks.map(b => `${b.number}(${b.transactions?.length || 0} txs)`))
       setStats(prev => ({
         ...prev,
-        latestBlock: realtimeStats.latestBlock,
-        gasPrice: realtimeStats.gasPrice,
-        // Keep existing blocks/transactions, real-time updates will enhance them
-        recentTransactions: transactionFeed.slice(0, 10).map(tx => ({ hash: tx.hash, status: tx.status }))
+        recentBlocks: recentBlocks
       }))
+    } catch (error) {
+      console.warn('Failed to refresh blocks:', error)
     }
-  }, [realtimeStats, transactionFeed])
+  }, [])
+
+  // Tier 1: Merge real-time stats with local state and refresh blocks when new block arrives
+  useEffect(() => {
+    if (realtimeStats.latestBlock > 0) {
+      setStats(prev => {
+        // If block number changed, trigger a fresh block data fetch
+        const blockChanged = prev.latestBlock !== realtimeStats.latestBlock
+        
+        if (blockChanged) {
+          console.log('🔄 Block changed via WebSocket:', prev.latestBlock, '→', realtimeStats.latestBlock)
+          // Async fetch new blocks data without blocking the UI
+          refreshBlocks().catch(err => console.warn('Failed to update blocks:', err))
+        }
+        
+        return {
+          ...prev,
+          latestBlock: realtimeStats.latestBlock,
+          gasPrice: realtimeStats.gasPrice,
+          // Update transactions from real-time feed
+          recentTransactions: transactionFeed.slice(0, 10).map(tx => ({ hash: tx.hash, status: tx.status }))
+        }
+      })
+    }
+  }, [realtimeStats, transactionFeed, refreshBlocks])
 
   // High-performance silent update for real-time changes
   const silentUpdate = useCallback(async (newBlockData?: any) => {
@@ -216,8 +252,8 @@ export default function HomePage() {
     if (!value || value === '0x0') return '0'
     try {
       const wei = parseInt(value, 16)
-      const eth = wei / 1e18
-      return eth.toFixed(4)
+      const ritual = wei / 1e18
+      return ritual.toFixed(4)
     } catch {
       return '0'
     }
@@ -372,7 +408,6 @@ export default function HomePage() {
                         <span>Updating</span>
                       </div>
                     )}
-                    <button className="text-lime-300 text-sm hover:text-white">Customize</button>
                   </div>
                 </div>
               </div>
@@ -450,7 +485,6 @@ export default function HomePage() {
                         <span>Updating</span>
                       </div>
                     )}
-                    <button className="text-lime-300 text-sm hover:text-white">Customize</button>
                   </div>
                 </div>
               </div>
@@ -490,12 +524,11 @@ export default function HomePage() {
                             <p className="text-sm text-lime-300">
                               From {tx.from ? `${tx.from.slice(0, 10)}...` : 'Unknown'}
                             </p>
-                            <p className="text-sm font-medium text-white">
-                              {tx.value && tx.value !== '0x0' ? 
-                                `${(parseInt(tx.value, 16) / 1e18).toFixed(4)} RITUAL` : 
-                                '0 RITUAL'
-                              }
-                            </p>
+                            {tx.value && tx.value !== '0x0' && (
+                              <p className="text-sm font-medium text-white">
+                                {`${(parseInt(tx.value, 16) / 1e18).toFixed(4)} RITUAL`}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -526,12 +559,11 @@ export default function HomePage() {
                               <p className="text-sm text-lime-300">
                                 From {tx.from ? `${tx.from.slice(0, 10)}...` : 'Unknown'}
                               </p>
-                              <p className="text-sm font-medium text-white">
-                                {tx.value && tx.value !== '0x0' ? 
-                                  `${(parseInt(tx.value, 16) / 1e18).toFixed(4)} RITUAL` : 
-                                  '0 RITUAL'
-                                }
-                              </p>
+                              {tx.value && tx.value !== '0x0' && (
+                                <p className="text-sm font-medium text-white">
+                                  {`${(parseInt(tx.value, 16) / 1e18).toFixed(4)} RITUAL`}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </div>

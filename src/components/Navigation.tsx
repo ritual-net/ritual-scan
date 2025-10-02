@@ -42,13 +42,13 @@ export function Navigation({ currentPage }: NavigationProps) {
                   <div className="absolute inset-0 bg-lime-500/5 rounded-lg"></div>
                 </span>
               ) : (
-                <Link 
+                <a 
                   key={item.key}
-                  href={item.href} 
+                  href={item.href}
                   className="text-lime-300/90 hover:text-white hover:bg-white/5 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 hover:shadow-md border border-transparent hover:border-lime-500/20"
                 >
                   {item.label}
-                </Link>
+                </a>
               )
             ))}
           </nav>
@@ -66,7 +66,8 @@ export function Navigation({ currentPage }: NavigationProps) {
               ) : (
                 <Link 
                   key={item.key}
-                  href={item.href} 
+                  href={item.href}
+                  prefetch={false}
                   className="text-lime-300/90 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 text-xs font-medium transition-all duration-200 border border-transparent hover:border-lime-500/20"
                 >
                   {item.label}
@@ -83,7 +84,8 @@ export function Navigation({ currentPage }: NavigationProps) {
                   {NAV_ITEMS.slice(6).map((item) => (
                     <Link 
                       key={item.key}
-                      href={item.href} 
+                      href={item.href}
+                      prefetch={false}
                       className="block px-4 py-2 text-sm text-lime-300 hover:text-white hover:bg-lime-500/10 transition-colors"
                     >
                       {item.label}

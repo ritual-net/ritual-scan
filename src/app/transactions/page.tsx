@@ -137,13 +137,13 @@ export default function TransactionsPage() {
   }
 
   const formatValue = (value: string) => {
-    if (!value || value === '0x0') return '0 ETH'
+    if (!value || value === '0x0') return '0 RITUAL'
     try {
       const wei = parseInt(value, 16)
-      const eth = wei / 1e18
-      return `${eth.toFixed(6)} ETH`
+      const ritual = wei / 1e18
+      return `${ritual.toFixed(6)} RITUAL`
     } catch {
-      return '0 ETH'
+      return '0 RITUAL'
     }
   }
 
@@ -167,6 +167,11 @@ export default function TransactionsPage() {
   const shortenAddress = (address: string) => {
     if (!address) return 'N/A'
     return `${address.slice(0, 6)}...${address.slice(-4)}`
+  }
+
+  const shortenHash = (hash: string) => {
+    if (!hash) return 'N/A'
+    return `${hash.slice(0, 10)}...${hash.slice(-8)}`
   }
 
   return (
