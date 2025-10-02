@@ -43,6 +43,20 @@ export default function MempoolPage() {
   const [isPending, startTransition] = useTransition()
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
 
+  // Use HTTP polling instead of WebSocket for mempool data
+  useEffect(() => {
+    loadMempoolData()
+    
+    // Set up polling interval for mempool data
+    const interval = setInterval(() => {
+      silentUpdate()
+    }, 3000) // Poll every 3 seconds
+    
+    return () => clearInterval(interval)
+  }, [])
+
+  // Remove WebSocket integration - using HTTP polling instead
+  /*
   // Real-time WebSocket integration
   const realtimeStatus = useRealtimeStatus()
 
@@ -75,8 +89,9 @@ export default function MempoolPage() {
       return [newTx, ...prev.slice(0, 49)] // Keep only 50 most recent
     })
   })
+  */
 
-  // High-performance silent update for real-time changes
+  // HTTP polling-based update function
   const silentUpdate = useCallback(async () => {
     const now = Date.now()
     if (now - lastUpdateTime < 1500) return // Max 1 update per 1.5 seconds
@@ -86,7 +101,10 @@ export default function MempoolPage() {
     
     try {
       startTransition(async () => {
-        const mempoolTxs = await rethClient.getMempoolTransactions()
+        const [mempoolTxs, mempoolStats] = await Promise.all([
+          rethClient.getMempoolTransactions(),
+          rethClient.getMempoolStats()
+        ])
         
         setTransactions(prevTxs => {
           // Smart merge - only update if we have different transactions
@@ -101,6 +119,13 @@ export default function MempoolPage() {
           
           return hasChanged ? mempoolTxs : prevTxs
         })
+
+        setStats(prevStats => ({
+          pending: mempoolStats.pending || prevStats.pending,
+          queued: mempoolStats.queued || prevStats.queued,
+          totalSize: mempoolStats.totalSize || prevStats.totalSize,
+          baseFee: mempoolStats.baseFee || prevStats.baseFee
+        }))
       })
     } catch (error) {
       console.warn('Silent mempool update failed:', error)
@@ -176,21 +201,13 @@ export default function MempoolPage() {
             <div>
               <div className="flex items-center space-x-3 mb-2">
                 <h1 className="text-3xl font-bold text-white">Transaction Mempool</h1>
-                {realtimeStatus && (
-                  <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium ${
-                    realtimeStatus.isConnected 
-                      ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                      : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                  }`}>
-                    <div className={`w-2 h-2 rounded-full ${
-                      realtimeStatus.isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'
-                    }`}></div>
-                    <span>{realtimeStatus.isConnected ? 'LIVE' : 'OFFLINE'}</span>
-                  </div>
-                )}
+                <div className="flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                  <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
+                  <span>HTTP POLLING</span>
+                </div>
               </div>
               <p className="text-lime-200">
-                Real-time mempool updates • {realtimeStatus?.subscriberCount || 0} active connections
+                HTTP polling mempool updates • Refreshes every 3 seconds
               </p>
               <div className="mt-4 p-3 bg-white/5 border border-lime-500/20 rounded-lg">
                 <TransactionTypeLegend />

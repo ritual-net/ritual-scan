@@ -33,7 +33,7 @@ spec:
       - name: gcr-json-key
       containers:
       - name: ritual-explorer
-        image: gcr.io/testing-logging-2/ritual-explorer:07107fa
+        image: gcr.io/testing-logging-2/ritual-explorer:07107fa-fresh
         ports:
         - containerPort: 3000
           name: http

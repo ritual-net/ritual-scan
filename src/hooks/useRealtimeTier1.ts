@@ -110,28 +110,72 @@ export function useRealtimeStats() {
   return stats
 }
 
-// Tier 1: Real-time transaction feed with status
+// Tier 1: Real-time transaction feed with full metadata
 export function useTransactionFeed(maxTransactions = 50) {
   const [transactions, setTransactions] = useState<Array<{
     hash: string
     status: 'pending' | 'confirmed'
     timestamp: number
     blockNumber?: number
+    from?: string
+    to?: string
+    value?: string
+    gasPrice?: string
   }>>([])
 
-  // Pending transactions
-  usePendingTransactionStream(useCallback((txHash: string) => {
-    setTransactions(prev => {
-      const newTx = {
-        hash: txHash,
-        status: 'pending' as const,
-        timestamp: Date.now()
-      }
+  // Pending transactions with full metadata
+  usePendingTransactionStream(useCallback(async (txHash: string) => {
+    try {
+      // Import rethClient dynamically to avoid circular dependencies
+      const { rethClient } = await import('@/lib/reth-client')
       
-      // Add to front, keep only maxTransactions
-      const updated = [newTx, ...prev.slice(0, maxTransactions - 1)]
-      return updated
-    })
+      // Fetch full transaction data
+      const txData = await rethClient.getTransaction(txHash)
+      
+      if (txData) {
+        setTransactions(prev => {
+          const newTx = {
+            hash: txHash,
+            status: 'pending' as const,
+            timestamp: Date.now(),
+            from: txData.from,
+            to: txData.to,
+            value: txData.value,
+            gasPrice: txData.gasPrice
+          }
+          
+          // Add to front, keep only maxTransactions
+          const updated = [newTx, ...prev.slice(0, maxTransactions - 1)]
+          return updated
+        })
+      } else {
+        // Fallback if transaction data not available
+        setTransactions(prev => {
+          const newTx = {
+            hash: txHash,
+            status: 'pending' as const,
+            timestamp: Date.now()
+          }
+          
+          const updated = [newTx, ...prev.slice(0, maxTransactions - 1)]
+          return updated
+        })
+      }
+    } catch (error) {
+      console.warn('Failed to fetch transaction metadata for', txHash, error)
+      
+      // Fallback to hash-only transaction
+      setTransactions(prev => {
+        const newTx = {
+          hash: txHash,
+          status: 'pending' as const,
+          timestamp: Date.now()
+        }
+        
+        const updated = [newTx, ...prev.slice(0, maxTransactions - 1)]
+        return updated
+      })
+    }
   }, [maxTransactions]))
 
   // Confirmed transactions (from blocks)

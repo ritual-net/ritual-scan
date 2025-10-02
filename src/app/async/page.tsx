@@ -33,9 +33,19 @@ export default function AsyncPage() {
   const [isPending, startTransition] = useTransition()
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
   
-  const realtimeStatus = useRealtimeStatus()
+  // Use HTTP polling instead of WebSocket
+  useEffect(() => {
+    loadAsyncTransactions()
+    
+    // Set up polling interval
+    const interval = setInterval(() => {
+      silentUpdate()
+    }, 5000) // Poll every 5 seconds
+    
+    return () => clearInterval(interval)
+  }, [])
 
-  // Silent update for real-time changes
+  // Silent update for HTTP polling
   const silentUpdate = useCallback(async () => {
     const now = Date.now()
     if (now - lastUpdateTime < 2000) return // Max 1 update per 2 seconds
@@ -157,18 +167,10 @@ export default function AsyncPage() {
             <div>
               <div className="flex items-center space-x-3 mb-2">
                 <h1 className="text-3xl font-bold text-white">Async Transactions</h1>
-                {realtimeStatus && (
-                  <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium ${
-                    realtimeStatus.isConnected 
-                      ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                      : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                  }`}>
-                    <div className={`w-2 h-2 rounded-full ${
-                      realtimeStatus.isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'
-                    }`}></div>
-                    <span>{realtimeStatus.isConnected ? 'LIVE' : 'OFFLINE'}</span>
-                  </div>
-                )}
+                <div className="flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                  <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
+                  <span>HTTP POLLING</span>
+                </div>
               </div>
               <p className="text-lime-200">
                 Ritual Chain async execution transactions (Types 0x11 & 0x12)

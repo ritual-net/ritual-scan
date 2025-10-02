@@ -235,9 +235,10 @@ export default function TransactionsPage() {
                         <div className="flex items-center space-x-2">
                           <Link 
                             href={`/tx/${tx.hash}`}
-                            className="text-lime-300 hover:text-white font-mono text-sm truncate transition-colors"
+                            className="text-lime-300 hover:text-white font-mono text-sm transition-colors"
+                            title={tx.hash}
                           >
-                            {tx.hash}
+                            {shortenHash(tx.hash)}
                           </Link>
                           <TransactionTypeChip type={tx.type || '0x0'} />
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-lime-500/20 text-lime-300 border border-lime-500/30">

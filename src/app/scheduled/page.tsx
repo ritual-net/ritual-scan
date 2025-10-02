@@ -47,6 +47,38 @@ export default function ScheduledPage({ searchParams }: ScheduledPageProps) {
   useEffect(() => {
     loadScheduledTransactions()
     
+    // Set up HTTP polling instead of WebSocket
+    const interval = setInterval(() => {
+      silentUpdate()
+    }, 5000) // Poll every 5 seconds
+    
+    return () => clearInterval(interval)
+  }, [])
+
+  // HTTP polling-based update function
+  const silentUpdate = useCallback(async () => {
+    const now = Date.now()
+    if (now - lastUpdateTime < 2000) return // Max 1 update per 2 seconds
+    
+    setLastUpdateTime(now)
+    setIsUpdating(true)
+    
+    try {
+      startTransition(async () => {
+        await loadScheduledTransactions()
+      })
+    } catch (error) {
+      console.warn('Silent scheduled update failed:', error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }, [lastUpdateTime])
+
+  /*
+  // Old WebSocket code - now using HTTP polling instead
+  useEffect(() => {
+    loadScheduledTransactions()
+    
     // Set up realtime updates using WebSocket manager
     const realtimeManager = getRealtimeManager()
     const unsubscribe = realtimeManager?.subscribe('scheduled-page', (update) => {

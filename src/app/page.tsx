@@ -7,6 +7,7 @@ import Link from 'next/link'
 import SearchBar from '@/components/SearchBar'
 import { useParticleBackground } from '@/hooks/useParticleBackground'
 import { useRealtimeStats, useTransactionFeed } from '@/hooks/useRealtimeTier1'
+import { PasswordProtection } from '@/components/PasswordProtection'
 
 interface BlockchainStats {
   latestBlock: number
@@ -256,8 +257,9 @@ export default function HomePage() {
     return `${hash.slice(0, 8)}...${hash.slice(-6)}`
   }
   return (
-    <div className="min-h-screen bg-black">
-      <Navigation currentPage="home" />
+    <PasswordProtection>
+      <div className="min-h-screen bg-black">
+        <Navigation currentPage="home" />
 
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-black via-lime-500/10 to-black border-b border-lime-500/20">
@@ -466,7 +468,40 @@ export default function HomePage() {
                   </div>
                 ) : (
                   <div className={`transition-opacity duration-300 ${isPending ? 'opacity-75' : 'opacity-100'}`}>
-                    {stats.recentTransactions.slice(0, 5).map((tx: any, index: number) => {
+                    {/* Real-time transaction feed from WebSocket */}
+                    {transactionFeed.length > 0 ? transactionFeed.slice(0, 5).map((tx: any, index: number) => (
+                      <div key={`tx-${tx.hash || index}`} className="p-4 hover:bg-lime-500/5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-lime-500/20 rounded flex items-center justify-center">
+                              <span className="text-lime-300 text-xs font-mono">Tx</span>
+                            </div>
+                            <div>
+                              <Link 
+                                href={`/tx/${tx.hash || '0x0'}`}
+                                className="text-lime-300 hover:text-white font-mono text-sm"
+                              >
+                                {tx.hash ? shortenHash(tx.hash) : `Tx ${index + 1}`}
+                              </Link>
+                              <p className="text-sm text-white">Recent</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-lime-300">
+                              From {tx.from ? `${tx.from.slice(0, 10)}...` : 'Unknown'}
+                            </p>
+                            <p className="text-sm font-medium text-white">
+                              {tx.value && tx.value !== '0x0' ? 
+                                `${(parseInt(tx.value, 16) / 1e18).toFixed(4)} RITUAL` : 
+                                '0 RITUAL'
+                              }
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )) : 
+                    /* Fallback to static transactions */
+                    stats.recentTransactions.slice(0, 5).map((tx: any, index: number) => {
                     try {
                       return (
                         <div key={`tx-${tx.hash || index}`} className="p-4 hover:bg-lime-500/5">
@@ -523,6 +558,7 @@ export default function HomePage() {
           </div>
         </div>
       </main>
-    </div>
+      </div>
+    </PasswordProtection>
   )
 }
