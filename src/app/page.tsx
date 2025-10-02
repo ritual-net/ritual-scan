@@ -6,6 +6,7 @@ import { getRealtimeManager } from '@/lib/realtime-websocket'
 import Link from 'next/link'
 import SearchBar from '@/components/SearchBar'
 import { useParticleBackground } from '@/hooks/useParticleBackground'
+import { useRealtimeStats, useTransactionFeed } from '@/hooks/useRealtimeTier1'
 
 interface BlockchainStats {
   latestBlock: number
@@ -27,6 +28,10 @@ export default function HomePage() {
   const [isPending, startTransition] = useTransition()
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
 
+  // Tier 1: Real-time stats using enhanced WebSocket features
+  const realtimeStats = useRealtimeStats()
+  const transactionFeed = useTransactionFeed(20)
+
   // Add particle background (using working implementation)
   useParticleBackground({ 
     color: '#346d22', 
@@ -35,23 +40,20 @@ export default function HomePage() {
 
   useEffect(() => {
     loadStats()
-    
-    // Set up realtime updates using the enhanced WebSocket manager
-    const realtimeManager = getRealtimeManager()
-    const unsubscribe = realtimeManager?.subscribe('homepage', (update) => {
-      if (update.type === 'newBlock') {
-        console.log('📊 [Homepage] New block received:', update.data)
-        // Use silent update instead of full reload
-        silentUpdate(update.data)
-      }
-    })
-
-    return () => {
-      if (unsubscribe) {
-        unsubscribe()
-      }
-    }
   }, [])
+
+  // Tier 1: Merge real-time stats with local state
+  useEffect(() => {
+    if (realtimeStats.latestBlock > 0) {
+      setStats(prev => ({
+        ...prev,
+        latestBlock: realtimeStats.latestBlock,
+        gasPrice: realtimeStats.gasPrice,
+        // Keep existing blocks/transactions, real-time updates will enhance them
+        recentTransactions: transactionFeed.slice(0, 10).map(tx => ({ hash: tx.hash, status: tx.status }))
+      }))
+    }
+  }, [realtimeStats, transactionFeed])
 
   // High-performance silent update for real-time changes
   const silentUpdate = useCallback(async (newBlockData?: any) => {
