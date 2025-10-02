@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useTransition } from 'react'
 import { rethClient } from '@/lib/reth-client'
 import { Navigation } from '@/components/Navigation'
 import { useMempoolUpdates, useTransactionUpdates, useRealtimeStatus } from '@/hooks/useRealtime'
+import { useEnhancedMempoolUpdates, usePendingTransactionStream } from '@/hooks/useRealtimeTier1'
 import { TransactionTypeChip, TransactionTypeLegend } from '@/components/TransactionTypeChip'
 import Link from 'next/link'
 import { useParticleBackground } from '@/hooks/useParticleBackground'
@@ -45,17 +46,34 @@ export default function MempoolPage() {
   // Real-time WebSocket integration
   const realtimeStatus = useRealtimeStatus()
 
-  // Real-time mempool updates
-  useMempoolUpdates((mempoolData) => {
-    console.log('Real-time mempool update received:', mempoolData)
-    setStats(mempoolData)
-    silentUpdate() // Trigger silent reload when mempool stats change
+  // Tier 1: Enhanced real-time mempool updates
+  useEnhancedMempoolUpdates((mempoolData) => {
+    console.log('🚀 Tier 1: Enhanced mempool update received:', mempoolData)
+    setStats(prev => ({
+      ...prev,
+      pending: mempoolData.pending || prev.pending,
+      queued: mempoolData.queued || prev.queued,
+      totalSize: mempoolData.totalSize || prev.totalSize,
+      baseFee: mempoolData.baseFee || prev.baseFee
+    }))
   })
 
-  // Real-time transaction updates
-  useTransactionUpdates((txData) => {
-    console.log('New mempool transaction:', txData.hash)
-    silentUpdate() // Silent update instead of full reload
+  // Tier 1: Real-time pending transaction stream
+  usePendingTransactionStream((txHash) => {
+    console.log('⚡ Tier 1: New pending transaction:', txHash)
+    // Add to transaction list in real-time
+    setTransactions(prev => {
+      const newTx: MempoolTransaction = {
+        hash: txHash,
+        from: '0x...',
+        value: '0',
+        gas: '21000',
+        gasPrice: '0',
+        nonce: '0',
+        status: 'pending'
+      }
+      return [newTx, ...prev.slice(0, 49)] // Keep only 50 most recent
+    })
   })
 
   // High-performance silent update for real-time changes
