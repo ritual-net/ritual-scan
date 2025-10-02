@@ -3,7 +3,7 @@
 import { rethClient } from './reth-client'
 
 export interface RealtimeUpdate {
-  type: 'newBlock' | 'newTransaction' | 'mempoolUpdate' | 'scheduledUpdate'
+  type: 'newBlock' | 'newTransaction' | 'newPendingTransaction' | 'gasPriceUpdate' | 'mempoolUpdate' | 'scheduledUpdate'
   data: any
   timestamp: number
 }
@@ -90,17 +90,27 @@ class RealtimeWebSocketManager {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return
 
     try {
-      const subscribeMessage = {
+      // Subscribe to new block headers
+      const blockSubscription = {
         jsonrpc: '2.0',
         method: 'eth_subscribe',
         params: ['newHeads'],
         id: 1
       }
 
-      console.log(`📡 [${this.connectionId}] Subscribing to new block headers`)
-      this.ws.send(JSON.stringify(subscribeMessage))
+      // Subscribe to pending transactions (Tier 1 feature)
+      const pendingTxSubscription = {
+        jsonrpc: '2.0',
+        method: 'eth_subscribe',
+        params: ['newPendingTransactions'],
+        id: 2
+      }
+
+      console.log(`📡 [${this.connectionId}] Subscribing to new block headers and pending transactions`)
+      this.ws.send(JSON.stringify(blockSubscription))
+      this.ws.send(JSON.stringify(pendingTxSubscription))
     } catch (error) {
-      console.error(`❌ [${this.connectionId}] Failed to subscribe to blocks:`, error)
+      console.error(`❌ [${this.connectionId}] Failed to subscribe to blocks/transactions:`, error)
     }
   }
 
@@ -142,6 +152,9 @@ class RealtimeWebSocketManager {
       if (result && result.number) {
         // This is a block header from newHeads subscription
         this.handleNewBlock(result)
+      } else if (typeof result === 'string' && result.startsWith('0x')) {
+        // This is a pending transaction hash
+        this.handleNewPendingTransaction(result)
       } else {
         console.log(`📩 [${this.connectionId}] Unknown subscription result:`, result)
       }
@@ -165,13 +178,33 @@ class RealtimeWebSocketManager {
       console.log(`🔗 [${this.connectionId}] New block #${blockNumber}`)
       this.lastBlockNumber = blockNumber
 
-      const update: RealtimeUpdate = {
-        type: 'newBlock',
-        data: blockHeader,
+      // Enhanced block update with gas price (Tier 1 feature)
+      const enhancedBlockData = {
+        ...blockHeader,
+        gasPrice: blockHeader.baseFeePerGas ? parseInt(blockHeader.baseFeePerGas, 16) / 1e9 : null,
         timestamp: Date.now()
       }
 
-      this.notifyCallbacks(update)
+      const blockUpdate: RealtimeUpdate = {
+        type: 'newBlock',
+        data: enhancedBlockData,
+        timestamp: Date.now()
+      }
+
+      // Emit gas price update (Tier 1 feature)
+      if (blockHeader.baseFeePerGas) {
+        const gasPriceUpdate: RealtimeUpdate = {
+          type: 'gasPriceUpdate',
+          data: {
+            gasPrice: parseInt(blockHeader.baseFeePerGas, 16) / 1e9,
+            blockNumber: blockNumber
+          },
+          timestamp: Date.now()
+        }
+        this.notifyCallbacks(gasPriceUpdate)
+      }
+
+      this.notifyCallbacks(blockUpdate)
 
       // Extract transactions from the full block since RETH optimized mode 
       // doesn't support newPendingTransactions subscription
@@ -209,6 +242,30 @@ class RealtimeWebSocketManager {
       const update: RealtimeUpdate = {
         type: 'newTransaction',
         data: { hash: txHash },
+        timestamp: Date.now()
+      }
+
+      this.notifyCallbacks(update)
+    }
+  }
+
+  // Tier 1: Handle pending transactions from WebSocket subscription
+  private handleNewPendingTransaction(txHash: string) {
+    if (!this.lastTransactionHashes.has(txHash)) {
+      console.log(`⚡ [${this.connectionId}] New pending transaction: ${txHash.slice(0, 10)}...`)
+      this.lastTransactionHashes.add(txHash)
+
+      // Keep only last 1000 transaction hashes to prevent memory leaks
+      if (this.lastTransactionHashes.size > 1000) {
+        const firstHash = this.lastTransactionHashes.values().next().value
+        if (firstHash) {
+          this.lastTransactionHashes.delete(firstHash)
+        }
+      }
+
+      const update: RealtimeUpdate = {
+        type: 'newPendingTransaction',
+        data: { hash: txHash, status: 'pending' },
         timestamp: Date.now()
       }
 
