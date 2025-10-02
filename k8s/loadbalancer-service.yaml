@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ritual-explorer-loadbalancer
+  labels:
+    app: ritual-explorer
+spec:
+  selector:
+    app: ritual-explorer
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+    protocol: TCP
+  type: LoadBalancer
