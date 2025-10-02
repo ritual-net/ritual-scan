@@ -116,10 +116,10 @@ export class RETHClient {
 
   constructor(initialConfig?: RpcConfig) {
     const defaultConfig: RpcConfig = {
-      primary: 'http://35.185.40.237:8545',
-      backup: 'http://130.211.246.58:8545',
-      websocket: 'ws://35.185.40.237:8546',
-      name: 'Default RETH'
+      primary: 'http://localhost:8545',
+      backup: 'http://localhost:8545',
+      websocket: 'ws://localhost:8546',
+      name: 'Local Mock RETH'
     }
     
     this.config = initialConfig || defaultConfig
