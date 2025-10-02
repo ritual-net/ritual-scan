@@ -39,7 +39,7 @@ class RealtimeWebSocketManager {
 
     try {
       // Try WebSocket connection to RETH node
-      const wsUrl = 'ws://35.185.40.237:8546'
+      const wsUrl = 'ws://localhost:8546'
       console.log(`🔗 [${this.connectionId}] Attempting WebSocket connection to: ${wsUrl}`)
       
       this.ws = new WebSocket(wsUrl)
