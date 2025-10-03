@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { EnhancedTransaction, RitualTransactionType, rethClient } from '@/lib/reth-client'
 import { TransactionTypeBadge, SystemAccountBadge } from './TransactionTypeBadge'
-import { PrecompileDataDisplay } from './PrecompileDataDisplay'
+import { useState, useEffect } from 'react'
+import { decodePrecompileInput, formatPrecompileData } from '@/lib/precompile-decoder'
 
 interface EnhancedTransactionDetailsProps {
   transaction: EnhancedTransaction
@@ -21,6 +22,27 @@ export function EnhancedTransactionDetails({ transaction }: EnhancedTransactionD
       return ritual.toFixed(6)
     } catch {
       return '0'
+    }
+  }
+
+  // Helper function to decode precompile input inline
+  const decodePrecompileInputInline = (precompileAddress: string, precompileInput: string) => {
+    try {
+      if (!precompileInput || precompileInput === '0x' || precompileInput.length < 10) {
+        return null
+      }
+
+      const result = decodePrecompileInput(precompileAddress, precompileInput)
+      
+      if (result.decoded) {
+        const formatted = formatPrecompileData(result.type, result.decoded)
+        return { data: formatted, probability: result.probability, type: result.type }
+      }
+      
+      return null
+    } catch (err) {
+      console.error('Error decoding precompile data inline:', err)
+      return null
     }
   }
 
@@ -251,14 +273,40 @@ export function EnhancedTransactionDetails({ transaction }: EnhancedTransactionD
                   </div>
                   
                   {/* Decoded Precompile Input */}
-                  {call.input && (
-                    <div className="mt-4 pt-4 border-t border-lime-500/10">
-                      <PrecompileDataDisplay 
-                        precompileAddress={call.address}
-                        precompileInput={call.input}
-                      />
-                    </div>
-                  )}
+                  {call.input && (() => {
+                    const decodedResult = decodePrecompileInputInline(call.address, call.input)
+                    if (!decodedResult) return null
+                    
+                    return (
+                      <div className="mt-4 pt-4 border-t border-lime-500/10">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="text-lime-400 text-sm font-medium">Decoded Precompile Input</div>
+                          {decodedResult.probability < 1.0 && (
+                            <div className="text-xs text-yellow-400">
+                              Confidence: {(decodedResult.probability * 100).toFixed(0)}%
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-3">
+                          {Object.entries(decodedResult.data).map(([key, value]) => (
+                            <div key={key} className="flex flex-col space-y-1">
+                              <div className="text-lime-400 text-sm font-medium">{key}:</div>
+                              <div className="text-white text-sm bg-black/30 rounded p-2 break-all">
+                                {typeof value === 'string' && value.startsWith('0x') && value.length === 42 ? (
+                                  <Link href={`/address/${value}`} className="text-lime-300 hover:text-white">
+                                    {value}
+                                  </Link>
+                                ) : (
+                                  String(value)
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
               ))}
             </div>
