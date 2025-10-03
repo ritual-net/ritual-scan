@@ -300,7 +300,7 @@ export function EnhancedTransactionDetails({ transaction }: EnhancedTransactionD
                             <div key={key} className="flex flex-col space-y-1">
                               <div className="text-lime-400 text-sm font-medium">{key}:</div>
                               <div className="relative group">
-                                <div className="text-white text-sm bg-black/30 rounded p-2 pr-12 break-all">
+                                <div className="text-white text-sm bg-black/30 rounded p-2 pr-12 break-all whitespace-pre-wrap font-mono">
                                   {typeof value === 'string' && value.startsWith('0x') && value.length === 42 ? (
                                     <Link href={`/address/${value}`} className="text-lime-300 hover:text-white">
                                       {value}

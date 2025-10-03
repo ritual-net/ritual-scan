@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react'
 import { decodePrecompileInput, formatPrecompileData, PRECOMPILE_ADDRESSES } from '@/lib/precompile-decoder'
 import Link from 'next/link'
 
+// Copy to clipboard helper
+const copyToClipboard = (text: string) => {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text)
+  }
+}
+
 interface PrecompileDataDisplayProps {
   precompileAddress: string
   precompileInput: string
@@ -104,14 +111,24 @@ export function PrecompileDataDisplay({ precompileAddress, precompileInput }: Pr
           {Object.entries(decodedData).map(([key, value]) => (
             <div key={key} className="flex flex-col space-y-1">
               <div className="text-lime-400 text-sm font-medium">{key}:</div>
-              <div className="text-white text-sm bg-black/30 rounded p-2 break-all">
-                {typeof value === 'string' && value.startsWith('0x') && value.length === 42 ? (
-                  <Link href={`/address/${value}`} className="text-lime-300 hover:text-white">
-                    {value}
-                  </Link>
-                ) : (
-                  String(value)
-                )}
+              <div className="relative group">
+                <div className="text-white text-sm bg-black/30 rounded p-2 pr-12 break-all whitespace-pre-wrap font-mono">
+                  {typeof value === 'string' && value.startsWith('0x') && value.length === 42 ? (
+                    <Link href={`/address/${value}`} className="text-lime-300 hover:text-white">
+                      {value}
+                    </Link>
+                  ) : (
+                    String(value)
+                  )}
+                </div>
+                {/* Copy button */}
+                <button
+                  onClick={() => copyToClipboard(String(value))}
+                  className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity bg-lime-500/20 hover:bg-lime-500/30 text-lime-300 px-2 py-1 rounded text-xs"
+                  title="Copy to clipboard"
+                >
+                  Copy
+                </button>
               </div>
             </div>
           ))}

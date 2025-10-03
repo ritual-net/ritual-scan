@@ -248,12 +248,25 @@ export function formatPrecompileData(
   
   if (type === 'http_call') {
     const httpData = decoded as HTTPCallRequest
+    
+    // Try to prettify Body if it's JSON
+    let bodyDisplay = 'None'
+    if (httpData.body) {
+      try {
+        const parsed = JSON.parse(httpData.body)
+        bodyDisplay = JSON.stringify(parsed, null, 2)
+      } catch {
+        // Not valid JSON, keep as-is
+        bodyDisplay = httpData.body
+      }
+    }
+    
     return {
       'Precompile Type': 'HTTP Call',
       'URL': httpData.url,
       'Method': getHTTPMethodName(httpData.method),
       'Headers': Object.entries(httpData.headers).map(([k, v]) => `${k}: ${v}`).join(', ') || 'None',
-      'Body': httpData.body || 'None',
+      'Body': bodyDisplay,
       'Executor': httpData.executor,
       'TTL': httpData.ttl.toString() + ' blocks',
     }
