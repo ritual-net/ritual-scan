@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { rethClient } from '@/lib/reth-client'
 import { Navigation } from '@/components/Navigation'
 import { getRealtimeManager } from '@/lib/realtime-websocket'
@@ -18,6 +18,12 @@ interface ValidatorStats {
   percentage: number
 }
 
+interface BlockCache {
+  number: number
+  miner: string
+  timestamp: number
+}
+
 export default function ValidatorsPage() {
   useParticleBackground()
   const [validators, setValidators] = useState<ValidatorStats[]>([])
@@ -27,29 +33,177 @@ export default function ValidatorsPage() {
   const [blockRange, setBlockRange] = useState({ start: 0, end: 0 })
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [isMounted, setIsMounted] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+  
+  // Cache of all blocks for efficient updates (continuous expanding window)
+  const blockCache = useRef<BlockCache[]>([])
+  const latestBlockRef = useRef<number>(0)
+  const isProcessingRef = useRef<boolean>(false)
+  const handleNewBlockRef = useRef<(blockHeader: any) => Promise<void>>()
 
+  // Recalculate validator stats from block cache
+  const recalculateValidatorStats = useCallback(() => {
+    if (blockCache.current.length === 0) {
+      console.log('⚠️ [Validators] No blocks in cache yet')
+      return
+    }
+
+    const validatorMap = new Map<string, {
+      blocksProposed: number
+      lastBlockNumber: number
+      lastBlockTime: number
+    }>()
+    
+    blockCache.current.forEach(block => {
+      if (!validatorMap.has(block.miner)) {
+        validatorMap.set(block.miner, {
+          blocksProposed: 0,
+          lastBlockNumber: block.number,
+          lastBlockTime: block.timestamp
+        })
+      }
+      
+      const stats = validatorMap.get(block.miner)!
+      stats.blocksProposed++
+      
+      if (block.number > stats.lastBlockNumber) {
+        stats.lastBlockNumber = block.number
+        stats.lastBlockTime = block.timestamp
+      }
+    })
+    
+    const latestBlock = blockCache.current[0]?.number || 0
+    const oldestBlock = blockCache.current[blockCache.current.length - 1]?.number || 0
+    const totalBlocksAnalyzed = blockCache.current.length
+    
+    setBlockRange({ start: oldestBlock, end: latestBlock })
+    setTotalBlocks(totalBlocksAnalyzed)
+    
+    const validatorStats: ValidatorStats[] = Array.from(validatorMap.entries()).map(([address, stats]) => {
+      const percentage = (stats.blocksProposed / totalBlocksAnalyzed) * 100
+      const blocksSinceLastProposal = latestBlock - stats.lastBlockNumber
+      
+      let healthStatus: 'active' | 'inactive' | 'warning' = 'active'
+      
+      // Only compute health status after we have at least 30 blocks for statistical reliability
+      if (totalBlocksAnalyzed >= 30) {
+        // Activity share as probability (decimal, not percentage)
+        const p = stats.blocksProposed / totalBlocksAnalyzed
+        
+        if (p > 0) {
+          // Geometric distribution: time until next block produced
+          // Mean = 1/p
+          // Stddev = sqrt((1-p)/p²)
+          const mean = 1 / p
+          const variance = (1 - p) / (p * p)
+          const stddev = Math.sqrt(variance)
+          
+          // Thresholds based on standard deviations
+          const warningThreshold = mean + 2 * stddev  // 95% confidence
+          const inactiveThreshold = mean + 3 * stddev // 99.7% confidence
+          
+          // Determine health status based on statistical thresholds
+          if (blocksSinceLastProposal > inactiveThreshold) {
+            healthStatus = 'inactive'
+          } else if (blocksSinceLastProposal > warningThreshold) {
+            healthStatus = 'warning'
+          }
+          // else: healthStatus remains 'active'
+          
+          console.log(`📊 [Validator ${address.slice(0, 10)}] p=${p.toFixed(4)}, mean=${mean.toFixed(1)}, warn=${warningThreshold.toFixed(1)}, inactive=${inactiveThreshold.toFixed(1)}, actual=${blocksSinceLastProposal}`)
+        }
+      }
+      // If < 30 blocks, keep all as 'active' (insufficient data)
+      
+      return {
+        address,
+        blocksProposed: stats.blocksProposed,
+        blocksValidated: stats.blocksProposed,
+        stake: percentage.toFixed(2) + '%',
+        healthStatus,
+        lastBlockNumber: stats.lastBlockNumber,
+        lastBlockTime: stats.lastBlockTime,
+        percentage
+      }
+    })
+    
+    validatorStats.sort((a, b) => b.blocksProposed - a.blocksProposed)
+    console.log(`📊 [Validators] Recalculated stats: ${validatorStats.length} validators from ${totalBlocksAnalyzed} blocks`)
+    setValidators(validatorStats)
+    setLastUpdate(new Date())
+  }, [])
+
+  // Handle new block from WebSocket - incremental update
+  const handleNewBlock = useCallback(async (blockHeader: any) => {
+    try {
+      const blockNumber = parseInt(blockHeader.number, 16)
+      
+      // Skip if we've already processed this block
+      if (blockNumber <= latestBlockRef.current) {
+        console.log(`⏭️ [Validators] Skipping block #${blockNumber} (already processed)`)
+        return
+      }
+      
+      setIsUpdating(true)
+      isProcessingRef.current = true
+      latestBlockRef.current = blockNumber
+      
+      // Fetch full block to get miner info
+      const fullBlock = await rethClient.getBlock(blockNumber, false)
+      if (!fullBlock || !fullBlock.miner) {
+        console.warn(`⚠️ [Validators] Block #${blockNumber} has no miner info`)
+        return
+      }
+      
+      const newBlock: BlockCache = {
+        number: blockNumber,
+        miner: fullBlock.miner.toLowerCase(),
+        timestamp: parseInt(fullBlock.timestamp, 16)
+      }
+      
+      // Add to cache (continuous expanding window)
+      blockCache.current = [newBlock, ...blockCache.current]
+      
+      // Recalculate validator stats from cache
+      recalculateValidatorStats()
+      
+      console.log(`✅ [Validators] Updated with block #${blockNumber} via WebSocket (total blocks: ${blockCache.current.length})`)
+    } catch (error) {
+      console.error('Failed to handle new block:', error)
+    } finally {
+      setIsUpdating(false)
+      isProcessingRef.current = false
+    }
+  }, [recalculateValidatorStats])
+
+  // Keep ref updated
+  useEffect(() => {
+    handleNewBlockRef.current = handleNewBlock
+  }, [handleNewBlock])
+
+  // Initialize once on mount
   useEffect(() => {
     setIsMounted(true)
     loadValidators()
-    
-    // Subscribe to real-time updates
+  }, [])
+
+  // Subscribe to WebSocket updates (only once)
+  useEffect(() => {
     const realtimeManager = getRealtimeManager()
     const unsubscribe = realtimeManager?.subscribe('validators-page', (update) => {
       if (update.type === 'newBlock') {
-        console.log('🔍 [Validators] New block received, updating stats')
-        // Refresh validator stats when new blocks arrive
-        setTimeout(() => loadValidators(), 2000)
+        const blockNumber = parseInt(update.data.number, 16)
+        console.log('🔍 [Validators] New block received via WebSocket:', blockNumber)
+        
+        // Use ref to avoid re-subscription
+        if (handleNewBlockRef.current) {
+          handleNewBlockRef.current(update.data)
+        }
       }
     })
 
-    // Refresh every 30 seconds
-    const interval = setInterval(() => {
-      loadValidators()
-    }, 30000)
-
     return () => {
       if (unsubscribe) unsubscribe()
-      clearInterval(interval)
     }
   }, [])
 
@@ -57,143 +211,22 @@ export default function ValidatorsPage() {
     try {
       setError(null)
       
-      // Get latest block number
+      // Get latest block number just for reference
       const latestBlockNumber = await rethClient.getLatestBlockNumber()
+      latestBlockRef.current = latestBlockNumber
       
-      // Fetch last 100 blocks to analyze validator activity (reduced for faster loading)
-      const blocksToAnalyze = Math.min(100, latestBlockNumber)
-      const startBlock = Math.max(0, latestBlockNumber - blocksToAnalyze)
+      console.log(`📊 [Validators] Starting from block #${latestBlockNumber}. Building validator stats live via WebSocket...`)
       
-      setBlockRange({ start: startBlock, end: latestBlockNumber })
-      setTotalBlocks(blocksToAnalyze)
+      // Start with empty cache - WebSocket will populate it
+      blockCache.current = []
+      setValidators([])
+      setTotalBlocks(0)
+      setBlockRange({ start: latestBlockNumber, end: latestBlockNumber })
       
-      // Fetch blocks in batches to avoid overwhelming the RPC
-      const validatorMap = new Map<string, {
-        blocksProposed: number
-        lastBlockNumber: number
-        lastBlockTime: number
-      }>()
-      
-      const batchSize = 10 // Very small batch size to avoid rate limiting
-      const batches = Math.ceil(blocksToAnalyze / batchSize)
-      
-      console.log(`📊 Starting to fetch ${blocksToAnalyze} blocks in ${batches} batches...`)
-      
-      for (let i = 0; i < batches; i++) {
-        if (i % 5 === 0) {
-          console.log(`📦 Processing batch ${i + 1}/${batches}...`)
-        }
-        const batchStart = latestBlockNumber - (i * batchSize)
-        const batchEnd = Math.max(startBlock, batchStart - batchSize)
-        
-        const promises = []
-        for (let blockNum = batchStart; blockNum > batchEnd && blockNum >= startBlock; blockNum--) {
-          promises.push(rethClient.getBlock(blockNum, false))
-        }
-        
-        try {
-          const blocks = await Promise.all(promises)
-          
-          blocks.forEach(block => {
-            if (block && block.miner) {
-              const validator = block.miner.toLowerCase()
-              const blockNum = parseInt(block.number, 16)
-              const blockTime = parseInt(block.timestamp, 16)
-              
-              if (!validatorMap.has(validator)) {
-                validatorMap.set(validator, {
-                  blocksProposed: 0,
-                  lastBlockNumber: blockNum,
-                  lastBlockTime: blockTime
-                })
-              }
-              
-              const stats = validatorMap.get(validator)!
-              stats.blocksProposed++
-              
-              // Update last block if this is more recent
-              if (blockNum > stats.lastBlockNumber) {
-                stats.lastBlockNumber = blockNum
-                stats.lastBlockTime = blockTime
-              }
-            }
-          })
-          
-          // Update UI progressively every 3 batches (30 blocks)
-          if (i % 3 === 0 && i > 0) {
-            const validatorStats: ValidatorStats[] = Array.from(validatorMap.entries()).map(([address, stats]) => {
-              const blocksAnalyzedSoFar = (i + 1) * batchSize
-              const percentage = (stats.blocksProposed / blocksAnalyzedSoFar) * 100
-              const blocksSinceLastProposal = latestBlockNumber - stats.lastBlockNumber
-              let healthStatus: 'active' | 'inactive' | 'warning' = 'active'
-              
-              if (blocksSinceLastProposal > 100) {
-                healthStatus = 'inactive'
-              } else if (blocksSinceLastProposal > 50) {
-                healthStatus = 'warning'
-              }
-              
-              return {
-                address,
-                blocksProposed: stats.blocksProposed,
-                blocksValidated: stats.blocksProposed,
-                stake: percentage.toFixed(2) + '%',
-                healthStatus,
-                lastBlockNumber: stats.lastBlockNumber,
-                lastBlockTime: stats.lastBlockTime,
-                percentage
-              }
-            })
-            
-            validatorStats.sort((a, b) => b.blocksProposed - a.blocksProposed)
-            setValidators(validatorStats)
-          }
-        } catch (error) {
-          console.warn(`Failed to fetch batch ${i}:`, error)
-        }
-        
-        // Add a longer delay between batches to avoid rate limiting
-        if (i < batches - 1) {
-          await new Promise(resolve => setTimeout(resolve, 200))
-        }
-      }
-      
-      console.log(`✅ Completed fetching all blocks. Found ${validatorMap.size} validators.`)
-      
-      // Convert map to array and calculate additional metrics
-      const validatorStats: ValidatorStats[] = Array.from(validatorMap.entries()).map(([address, stats]) => {
-        const percentage = (stats.blocksProposed / blocksToAnalyze) * 100
-        
-        // Determine health status
-        const blocksSinceLastProposal = latestBlockNumber - stats.lastBlockNumber
-        let healthStatus: 'active' | 'inactive' | 'warning' = 'active'
-        
-        if (blocksSinceLastProposal > 100) {
-          healthStatus = 'inactive'
-        } else if (blocksSinceLastProposal > 50) {
-          healthStatus = 'warning'
-        }
-        
-        return {
-          address,
-          blocksProposed: stats.blocksProposed,
-          blocksValidated: stats.blocksProposed, // In PoS, proposed = validated
-          stake: percentage.toFixed(2) + '%', // Using percentage as stake proxy
-          healthStatus,
-          lastBlockNumber: stats.lastBlockNumber,
-          lastBlockTime: stats.lastBlockTime,
-          percentage
-        }
-      })
-      
-      // Sort by blocks proposed (descending)
-      validatorStats.sort((a, b) => b.blocksProposed - a.blocksProposed)
-      
-      setValidators(validatorStats)
-      setLastUpdate(new Date())
+      console.log(`✅ [Validators] Ready to receive blocks via WebSocket. Waiting for first block...`)
     } catch (err) {
-      console.error('Failed to load validators:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load validators')
+      console.error('[Validators] Failed to initialize:', err)
+      setError(err instanceof Error ? err.message : 'Failed to initialize validators')
     } finally {
       setLoading(false)
     }
@@ -226,10 +259,16 @@ export default function ValidatorsPage() {
   }
 
   const formatTimestamp = (timestamp: number) => {
-    const date = new Date(timestamp * 1000)
+    // RETH returns timestamps in milliseconds if > 1577836800000 (2020-01-01)
+    // Otherwise they're in seconds and need conversion
+    const date = timestamp > 1577836800000 ? 
+      new Date(timestamp) : // Already milliseconds
+      new Date(timestamp * 1000) // Convert seconds to milliseconds
+    
     const now = new Date()
     const diff = Math.floor((now.getTime() - date.getTime()) / 1000)
     
+    if (diff < 0) return 'just now' // Handle future timestamps
     if (diff < 60) return `${diff}s ago`
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
@@ -243,12 +282,22 @@ export default function ValidatorsPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-lime-400 mb-2">
-            Validators
-          </h1>
-          <p className="text-lime-300/70">
-            Network validators and their performance metrics
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-lime-400 mb-2">
+                Validators
+              </h1>
+              <p className="text-lime-300/70">
+                Real-time validator performance built live via WebSocket
+              </p>
+            </div>
+            {isUpdating && (
+              <div className="flex items-center space-x-2 text-sm text-lime-400">
+                <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
+                <span>Updating...</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -282,7 +331,7 @@ export default function ValidatorsPage() {
         {loading && (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-lime-400"></div>
-            <p className="mt-4 text-lime-300/70">Loading validator data...</p>
+            <p className="mt-4 text-lime-300/70">Connecting to WebSocket...</p>
           </div>
         )}
 
@@ -290,6 +339,15 @@ export default function ValidatorsPage() {
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
             <p className="text-red-300">{error}</p>
+          </div>
+        )}
+
+        {/* Empty State - Waiting for blocks */}
+        {!loading && !error && validators.length === 0 && (
+          <div className="text-center py-12">
+            <div className="inline-block animate-pulse text-6xl mb-4">📡</div>
+            <p className="text-lime-300/70 text-lg">Waiting for blocks via WebSocket...</p>
+            <p className="text-lime-300/50 text-sm mt-2">Validator stats will appear as new blocks arrive</p>
           </div>
         )}
 
@@ -396,10 +454,10 @@ export default function ValidatorsPage() {
         {!loading && !error && validators.length > 0 && (
           <div className="mt-6 text-center text-sm text-lime-300/50">
             <p>
-              Showing validator statistics for blocks {blockRange.start.toLocaleString()} to {blockRange.end.toLocaleString()}
+              Live validator statistics • {totalBlocks.toLocaleString()} blocks analyzed (#{blockRange.start.toLocaleString()} to #{blockRange.end.toLocaleString()})
             </p>
             <p className="mt-1">
-              Data updates automatically every 30 seconds
+              Built entirely from WebSocket updates • Continuous expanding window
             </p>
           </div>
         )}
