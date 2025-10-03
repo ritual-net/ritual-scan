@@ -98,9 +98,9 @@ export default function ValidatorsPage() {
           const variance = (1 - p) / (p * p)
           const stddev = Math.sqrt(variance)
           
-          // Thresholds based on standard deviations
-          const warningThreshold = mean + 2 * stddev  // 95% confidence
-          const inactiveThreshold = mean + 3 * stddev // 99.7% confidence
+          // Thresholds based on standard deviations (very conservative)
+          const warningThreshold = mean + 5 * stddev   // Extremely conservative
+          const inactiveThreshold = mean + 10 * stddev // Only flag severe outliers
           
           // Determine health status based on statistical thresholds
           if (blocksSinceLastProposal > inactiveThreshold) {
