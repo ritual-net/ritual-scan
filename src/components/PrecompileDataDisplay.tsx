@@ -104,7 +104,7 @@ export function PrecompileDataDisplay({ precompileAddress, precompileInput }: Pr
           {Object.entries(decodedData).map(([key, value]) => (
             <div key={key} className="flex flex-col space-y-1">
               <div className="text-lime-400 text-sm font-medium">{key}:</div>
-              <div className="text-white text-sm bg-black/30 rounded p-2 break-all">
+              <div className="text-white text-sm bg-black/30 rounded p-2 break-words whitespace-pre-wrap overflow-visible">
                 {typeof value === 'string' && value.startsWith('0x') && value.length === 42 ? (
                   <Link href={`/address/${value}`} className="text-lime-300 hover:text-white">
                     {value}
