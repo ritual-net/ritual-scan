@@ -253,7 +253,14 @@ export function formatPrecompileData(
       'URL': httpData.url,
       'Method': getHTTPMethodName(httpData.method),
       'Headers': Object.entries(httpData.headers).map(([k, v]) => `${k}: ${v}`).join(', ') || 'None',
-      'Body': httpData.body ? (httpData.body.length > 100 ? `${httpData.body.substring(0, 100)}...` : httpData.body) : 'None',
+      'Body': httpData.body ? (() => {
+        try {
+          const parsed = JSON.parse(httpData.body)
+          return JSON.stringify(parsed, null, 2)
+        } catch {
+          return httpData.body
+        }
+      })() : 'None',
       'Executor': httpData.executor,
       'TTL': httpData.ttl.toString() + ' blocks',
     }

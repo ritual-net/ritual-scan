@@ -292,7 +292,17 @@ export function EnhancedTransactionDetails({ transaction }: EnhancedTransactionD
                           {Object.entries(decodedResult.data).map(([key, value]) => (
                             <div key={key} className="flex flex-col space-y-1">
                               <div className="text-lime-400 text-sm font-medium">{key}:</div>
-                              <div className="text-white text-sm bg-black/30 rounded p-2 break-words whitespace-pre-wrap overflow-visible">
+                              <div style={{ 
+                                backgroundColor: 'rgba(0,0,0,0.3)', 
+                                padding: '8px', 
+                                borderRadius: '4px',
+                                fontFamily: 'monospace',
+                                fontSize: '13px',
+                                color: 'white',
+                                whiteSpace: 'pre-wrap',
+                                wordWrap: 'break-word',
+                                overflowWrap: 'break-word'
+                              }}>
                                 {typeof value === 'string' && value.startsWith('0x') && value.length === 42 ? (
                                   <Link href={`/address/${value}`} className="text-lime-300 hover:text-white">
                                     {value}
