@@ -76,7 +76,9 @@ class RealtimeWebSocketManager {
       }
 
       this.ws.onerror = (error) => {
-        console.error(`⚠️ [${this.connectionId}] WebSocket error:`, error)
+        // WebSocket errors in browsers are often empty objects for security reasons
+        // We have polling fallbacks, so this is not critical
+        console.log(`⚠️ [${this.connectionId}] WebSocket connection failed - falling back to polling`)
         this.isConnected = false
       }
 

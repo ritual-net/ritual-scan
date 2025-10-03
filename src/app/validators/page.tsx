@@ -25,9 +25,11 @@ export default function ValidatorsPage() {
   const [error, setError] = useState<string | null>(null)
   const [totalBlocks, setTotalBlocks] = useState(0)
   const [blockRange, setBlockRange] = useState({ start: 0, end: 0 })
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
+    setIsMounted(true)
     loadValidators()
     
     // Subscribe to real-time updates
@@ -271,7 +273,7 @@ export default function ValidatorsPage() {
           <div className="bg-lime-500/5 border border-lime-500/20 rounded-lg p-4">
             <div className="text-lime-300/70 text-sm mb-1">Last Update</div>
             <div className="text-sm font-medium text-white">
-              {lastUpdate.toLocaleTimeString()}
+              {isMounted && lastUpdate ? lastUpdate.toLocaleTimeString() : '--:--:--'}
             </div>
           </div>
         </div>
