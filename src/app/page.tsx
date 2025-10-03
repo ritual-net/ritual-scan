@@ -59,9 +59,32 @@ export default function HomePage() {
       console.log('📊 Refreshing blocks via WebSocket trigger...')
       const recentBlocks = await rethClient.getRecentBlocks(10)
       console.log('📦 Updated blocks:', recentBlocks.map(b => `${b.number}(${b.transactions?.length || 0} txs)`))
+      
+      // Extract transactions from recent blocks for real-time count update
+      const allRecentTransactions: any[] = []
+      for (const block of recentBlocks.slice(0, 3)) { // Last 3 blocks like the label says
+        if (block.transactions && Array.isArray(block.transactions)) {
+          for (const tx of block.transactions.slice(0, 5)) { // Limit per block
+            if (tx && typeof tx === 'object' && tx.hash) {
+              allRecentTransactions.push({
+                hash: tx.hash,
+                status: 'confirmed',
+                from: tx.from,
+                to: tx.to,
+                value: tx.value,
+                timestamp: block.timestamp || Date.now() / 1000
+              })
+              if (allRecentTransactions.length >= 15) break // Max 15 total
+            }
+          }
+          if (allRecentTransactions.length >= 15) break
+        }
+      }
+      
       setStats(prev => ({
         ...prev,
-        recentBlocks: recentBlocks
+        recentBlocks: recentBlocks,
+        recentTransactions: allRecentTransactions
       }))
     } catch (error) {
       console.warn('Failed to refresh blocks:', error)
@@ -85,8 +108,10 @@ export default function HomePage() {
           ...prev,
           latestBlock: realtimeStats.latestBlock,
           gasPrice: realtimeStats.gasPrice,
-          // Update transactions from real-time feed
-          recentTransactions: transactionFeed.slice(0, 10).map(tx => ({ hash: tx.hash, status: tx.status }))
+          // Update transactions from real-time feed - prioritize live feed over block-based count
+          recentTransactions: transactionFeed.length > 0 ? 
+            transactionFeed.slice(0, 15).map(tx => ({ hash: tx.hash, status: tx.status })) :
+            prev.recentTransactions // Keep existing if no live feed yet
         }
       })
     }
