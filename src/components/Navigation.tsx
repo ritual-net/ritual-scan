@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: '/', label: 'Home', key: 'home' },
   { href: '/blocks', label: 'Blocks', key: 'blocks' },
   { href: '/transactions', label: 'Transactions', key: 'transactions' },
+  { href: '/validators', label: 'Validators', key: 'validators' },
   { href: '/mempool', label: 'Mempool', key: 'mempool' },
   { href: '/scheduled', label: 'Scheduled', key: 'scheduled' },
   { href: '/async', label: 'Async', key: 'async' },

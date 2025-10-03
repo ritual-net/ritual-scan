@@ -228,7 +228,12 @@ export class RETHClient {
         throw new Error(`RPC call failed: ${response.statusText}`)
       }
 
-      const data = await response.json()
+      let data
+      try {
+        data = await response.json()
+      } catch (jsonError) {
+        throw new Error(`Invalid JSON response from RPC: ${jsonError}`)
+      }
       
       if (data.error) {
         throw new Error(`RPC error: ${data.error.message}`)
@@ -248,7 +253,13 @@ export class RETHClient {
           body: JSON.stringify(payload)
         })
 
-        const data = await response.json()
+        let data
+        try {
+          data = await response.json()
+        } catch (jsonError) {
+          throw new Error(`Invalid JSON response from backup RPC: ${jsonError}`)
+        }
+        
         if (data.error) {
           throw new Error(`Backup RPC error: ${data.error.message}`)
         }
