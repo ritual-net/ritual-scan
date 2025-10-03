@@ -126,21 +126,22 @@ export function EnhancedTransactionDetails({ transaction }: EnhancedTransactionD
           </>
         )}
 
+        {/* Precompile Address - show for any transaction type */}
+        {transaction.precompileAddress && (
+          <div className="flex items-center justify-between px-6 py-4">
+            <div className="flex items-center space-x-3 text-lime-400">
+              <span className="w-4 h-4">🔧</span>
+              <span className="text-sm font-medium">Precompile Address:</span>
+            </div>
+            <Link href={`/address/${transaction.precompileAddress}`} className="text-lime-300 hover:text-white font-mono text-sm">
+              {transaction.precompileAddress}
+            </Link>
+          </div>
+        )}
+
         {transaction.type === RitualTransactionType.ASYNC_COMMITMENT && (
           <>
             {/* AsyncCommitment Fields */}
-            {transaction.precompileAddress && (
-              <div className="flex items-center justify-between px-6 py-4">
-                <div className="flex items-center space-x-3 text-lime-400">
-                  <span className="w-4 h-4">🔧</span>
-                  <span className="text-sm font-medium">Precompile Address:</span>
-                </div>
-                <Link href={`/address/${transaction.precompileAddress}`} className="text-lime-300 hover:text-white font-mono text-sm">
-                  {transaction.precompileAddress}
-                </Link>
-              </div>
-            )}
-
             {transaction.executorAddress && (
               <div className="flex items-center justify-between px-6 py-4">
                 <div className="flex items-center space-x-3 text-lime-400">

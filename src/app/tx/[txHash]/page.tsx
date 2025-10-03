@@ -203,9 +203,8 @@ export default function TransactionDetailPage({ params }: PageProps) {
         {/* Enhanced Transaction Details Component */}
         <EnhancedTransactionDetails transaction={transaction} />
 
-        {/* Precompile Data Display for Async Commitment Transactions */}
+        {/* Precompile Data Display for any transaction with precompile calls */}
         {transaction && 
-         transaction.type === RitualTransactionType.ASYNC_COMMITMENT && 
          transaction.precompileAddress && 
          transaction.precompileInput && (
           <div className="mt-6">
