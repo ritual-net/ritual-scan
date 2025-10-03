@@ -39,7 +39,7 @@ export default function ValidatorsPage() {
   const blockCache = useRef<BlockCache[]>([])
   const latestBlockRef = useRef<number>(0)
   const isProcessingRef = useRef<boolean>(false)
-  const handleNewBlockRef = useRef<(blockHeader: any) => Promise<void>>()
+  const handleNewBlockRef = useRef<(blockHeader: any) => Promise<void>>(async () => {})
 
   // Recalculate validator stats from block cache
   const recalculateValidatorStats = useCallback(() => {

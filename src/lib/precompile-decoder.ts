@@ -177,7 +177,7 @@ export function decodeLLMCallRequest(data: string): Partial<LLMCallRequest> | nu
       messages,
       model: decoded[4] as string,
       frequency_penalty: frequencyPenalty,
-      max_completion_tokens: maxCompletionTokens > 0n ? Number(maxCompletionTokens) : null,
+      max_completion_tokens: maxCompletionTokens > BigInt(0) ? Number(maxCompletionTokens) : null,
       n: Number(decoded[11] as bigint),
     }
   } catch (error) {
