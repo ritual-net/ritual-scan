@@ -115,16 +115,20 @@ export class RETHClient {
   private changeListeners: ((config: RpcConfig) => void)[] = []
 
   constructor(initialConfig?: RpcConfig) {
+    // Use proxy endpoint when running in browser to avoid mixed content errors
+    const isClient = typeof window !== 'undefined'
+    const proxyUrl = isClient ? '/api/rpc-proxy' : (process.env.NEXT_PUBLIC_RETH_RPC_URL || 'http://35.185.40.237:8545')
+    
     const defaultConfig: RpcConfig = {
-      primary: 'http://104.196.32.199:8545',
-      websocket: 'ws://104.196.32.199:8546',
+      primary: proxyUrl,
+      websocket: process.env.NEXT_PUBLIC_RETH_WS_URL || 'ws://35.185.40.237:8546',
       name: 'Default RETH'
     }
     
     this.config = initialConfig || defaultConfig
     this.rpcUrl = this.config.primary
     this.backupRpcUrl = this.config.backup || this.config.primary
-    this.wsUrl = this.config.websocket || 'ws://104.196.32.199:8546'
+    this.wsUrl = this.config.websocket || process.env.NEXT_PUBLIC_RETH_WS_URL || 'ws://35.185.40.237:8546'
     
     // Load from localStorage if available
     if (typeof window !== 'undefined') {
@@ -145,7 +149,7 @@ export class RETHClient {
     this.config = { ...newConfig }
     this.rpcUrl = this.config.primary
     this.backupRpcUrl = this.config.backup || this.config.primary
-    this.wsUrl = this.config.websocket || 'ws://104.196.32.199:8546'
+    this.wsUrl = this.config.websocket || process.env.NEXT_PUBLIC_RETH_WS_URL || 'ws://35.185.40.237:8546'
     
     if (persist && typeof window !== 'undefined') {
       localStorage.setItem('reth-client-config', JSON.stringify(this.config))

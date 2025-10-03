@@ -165,13 +165,13 @@ export const CHAINS: Record<string, ChainConfig> = {
     symbol: 'RITUAL',
     decimals: 18,
     rpcUrls: [
-      'http://104.196.32.199:8545',
+      process.env.NEXT_PUBLIC_RETH_RPC_URL || 'http://35.185.40.237:8545',
     ],
     blockExplorers: [
-      { name: 'Custom Explorer', url: 'http://104.196.32.199:3000' },
+      { name: 'Custom Explorer', url: 'http://35.185.40.237:3000' },
     ],
-    apiEndpoint: 'http://104.196.32.199:8545',
-    wsEndpoint: 'ws://104.196.32.199:8546',
+    apiEndpoint: process.env.NEXT_PUBLIC_RETH_RPC_URL || 'http://35.185.40.237:8545',
+    wsEndpoint: process.env.NEXT_PUBLIC_RETH_WS_URL || 'ws://35.185.40.237:8546',
     features: {
       eip1559: true,
       contractVerification: false, // Custom node might not have verification

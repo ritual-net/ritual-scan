@@ -37,53 +37,11 @@ class RealtimeWebSocketManager {
       return
     }
 
-    try {
-      // Try WebSocket connection to RETH node
-      const wsUrl = 'ws://104.196.32.199:8546'
-      console.log(`🔗 [${this.connectionId}] Attempting WebSocket connection to: ${wsUrl}`)
-      
-      this.ws = new WebSocket(wsUrl)
-      
-      this.ws.onopen = () => {
-        console.log(`✅ [${this.connectionId}] WebSocket connected`)
-        this.isConnected = true
-        this.reconnectAttemps = 0
-        this.reconnectInterval = 1000
-        
-        // Subscribe to new block headers (transactions will be extracted from blocks)
-        this.subscribeToBlocks()
-      }
-
-      this.ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data)
-          this.handleWebSocketMessage(message)
-        } catch (error) {
-          // Only log JSON parse errors if they're not related to RETH optimized mode responses
-          if (event.data && event.data.includes('not supported in optimized mode')) {
-            console.log(`📡 [${this.connectionId}] RETH optimized mode response (expected)`)
-          } else {
-            console.error(`❌ [${this.connectionId}] WebSocket JSON parse error:`, error)
-            console.error(`❌ [${this.connectionId}] Raw message that failed:`, event.data)
-          }
-        }
-      }
- 
-      this.ws.onclose = (event) => {
-        console.log(`🔌 [${this.connectionId}] WebSocket disconnected:`, event.code, event.reason)
-        this.isConnected = false
-        this.scheduleReconnect()
-      }
-
-      this.ws.onerror = (error) => {
-        console.error(`⚠️ [${this.connectionId}] WebSocket error:`, error)
-        this.isConnected = false
-      }
-
-    } catch (error) {
-      console.error(`❌ [${this.connectionId}] Failed to create WebSocket connection:`, error)
-      this.scheduleReconnect()
-    }
+    // Use HTTP polling instead of WebSocket to avoid mixed content issues
+    // WebSocket connections are disabled - rely on high-frequency polling instead
+    console.log(`🔗 [${this.connectionId}] WebSocket disabled, using HTTP polling mode`)
+    // Skip WebSocket connection attempt - all updates via polling
+    return
   }
 
   private subscribeToBlocks() {
