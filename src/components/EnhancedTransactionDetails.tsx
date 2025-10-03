@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { EnhancedTransaction, RitualTransactionType, rethClient } from '@/lib/reth-client'
 import { TransactionTypeBadge, SystemAccountBadge } from './TransactionTypeBadge'
+import { PrecompileDataDisplay } from './PrecompileDataDisplay'
 
 interface EnhancedTransactionDetailsProps {
   transaction: EnhancedTransaction
@@ -226,7 +227,7 @@ export function EnhancedTransactionDetails({ transaction }: EnhancedTransactionD
             <div className="space-y-4">
               {transaction.spcCalls.map((call, index) => (
                 <div key={index} className="bg-black/30 rounded-lg p-4 border border-lime-500/10">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
                     <div>
                       <div className="text-lime-400">Precompile Address:</div>
                       <Link href={`/address/${call.address}`} className="text-lime-300 hover:text-white font-mono break-all">
@@ -248,6 +249,16 @@ export function EnhancedTransactionDetails({ transaction }: EnhancedTransactionD
                       <div className="text-white">{call.programCounter}</div>
                     </div>
                   </div>
+                  
+                  {/* Decoded Precompile Input */}
+                  {call.input && (
+                    <div className="mt-4 pt-4 border-t border-lime-500/10">
+                      <PrecompileDataDisplay 
+                        precompileAddress={call.address}
+                        precompileInput={call.input}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

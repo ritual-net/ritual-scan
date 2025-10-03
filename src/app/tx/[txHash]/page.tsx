@@ -215,6 +215,7 @@ export default function TransactionDetailPage({ params }: PageProps) {
           </div>
         )}
 
+
         {/* Transaction Flow Visualizations */}
         {transaction && transaction.type === RitualTransactionType.SCHEDULED && (
           <ScheduledTransactionFlow transaction={transaction} />
