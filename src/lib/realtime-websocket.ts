@@ -166,9 +166,20 @@ class RealtimeWebSocketManager {
         return
       }
 
-      if (result && result.number) {
+      // Check if this is a block header (multiple ways to identify it)
+      const isBlockHeader = result && typeof result === 'object' && (
+        result.number ||            // Standard field
+        result.blockNumber ||       // Alternative field name
+        result.hash ||              // All blocks have hash
+        result.parentHash ||        // All blocks have parent hash
+        result.miner ||             // Blocks have miner
+        result.difficulty !== undefined  // Blocks have difficulty
+      )
+
+      if (isBlockHeader) {
         // This is a block header from newHeads subscription
         console.log(`🔍 [DEBUG] Identified as block header, calling handleNewBlock`)
+        console.log(`🔍 [DEBUG] Block data:`, JSON.stringify(result, null, 2))
         this.handleNewBlock(result)
       } else if (typeof result === 'string' && result.startsWith('0x')) {
         // This is a pending transaction hash
@@ -177,6 +188,7 @@ class RealtimeWebSocketManager {
       } else {
         console.log(`📩 [${this.connectionId}] Unknown subscription result:`, result)
         console.log(`🔍 [DEBUG] Result object keys:`, result ? Object.keys(result) : 'null')
+        console.log(`🔍 [DEBUG] Full result object:`, JSON.stringify(result, null, 2))
       }
     } else if (message.id && message.result) {
       console.log(`📩 [${this.connectionId}] Subscription confirmed:`, message.result)
@@ -192,71 +204,99 @@ class RealtimeWebSocketManager {
   }
 
   private async handleNewBlock(blockHeader: any) {
-    const blockNumber = parseInt(blockHeader.number, 16)
-    
-    if (blockNumber > this.lastBlockNumber) {
-      console.log(`🔗 [${this.connectionId}] New block #${blockNumber}`)
-      this.lastBlockNumber = blockNumber
-
-      // Enhanced block update with gas price (Tier 1 feature)
-      const enhancedBlockData = {
-        ...blockHeader,
-        gasPrice: blockHeader.baseFeePerGas ? parseInt(blockHeader.baseFeePerGas, 16) / 1e9 : null,
-        timestamp: Date.now()
-      }
-
-      // **CRITICAL FIX**: Add to cache for smart caching
-      this.recentBlocksCache.unshift(enhancedBlockData)
-      // Keep only last 50 blocks to prevent memory issues
-      if (this.recentBlocksCache.length > 50) {
-        this.recentBlocksCache = this.recentBlocksCache.slice(0, 50)
+    try {
+      // Extract block number from various possible field names
+      const blockNumberHex = blockHeader.number || blockHeader.blockNumber
+      
+      if (!blockNumberHex) {
+        console.error(`❌ [${this.connectionId}] Block header has no number field:`, blockHeader)
+        console.error(`❌ [${this.connectionId}] Available keys:`, Object.keys(blockHeader))
+        return
       }
       
-      console.log(`📦 [${this.connectionId}] Cache updated: ${this.recentBlocksCache.length} blocks cached`)
+      const blockNumber = typeof blockNumberHex === 'string' 
+        ? parseInt(blockNumberHex, 16) 
+        : blockNumberHex
       
-      // **FIX**: Notify subscribers that cache is now available (first block)
-      if (this.recentBlocksCache.length === 1) {
-        console.log(`🎉 [${this.connectionId}] Cache is now available! Notifying pages...`)
+      if (isNaN(blockNumber)) {
+        console.error(`❌ [${this.connectionId}] Invalid block number: ${blockNumberHex}`)
+        return
       }
+      
+      if (blockNumber > this.lastBlockNumber) {
+        console.log(`🔗 [${this.connectionId}] New block #${blockNumber}`)
+        this.lastBlockNumber = blockNumber
 
-      const blockUpdate: RealtimeUpdate = {
-        type: 'newBlock',
-        data: enhancedBlockData,
-        timestamp: Date.now()
-      }
+        // Enhanced block update with gas price (Tier 1 feature)
+        const enhancedBlockData = {
+          ...blockHeader,
+          // Normalize the number field
+          number: blockNumberHex,
+          gasPrice: blockHeader.baseFeePerGas ? parseInt(blockHeader.baseFeePerGas, 16) / 1e9 : null,
+          timestamp: blockHeader.timestamp || Math.floor(Date.now() / 1000).toString(16)
+        }
 
-      // Emit gas price update (Tier 1 feature)
-      if (blockHeader.baseFeePerGas) {
-        const gasPriceUpdate: RealtimeUpdate = {
-          type: 'gasPriceUpdate',
-          data: {
-            gasPrice: parseInt(blockHeader.baseFeePerGas, 16) / 1e9,
-            blockNumber: blockNumber
-          },
+        // **CRITICAL FIX**: Add to cache for smart caching
+        this.recentBlocksCache.unshift(enhancedBlockData)
+        // Keep only last 50 blocks to prevent memory issues
+        if (this.recentBlocksCache.length > 50) {
+          this.recentBlocksCache = this.recentBlocksCache.slice(0, 50)
+        }
+        
+        console.log(`📦 [${this.connectionId}] Cache updated: ${this.recentBlocksCache.length} blocks cached`)
+        console.log(`📦 [${this.connectionId}] First 3 cached block numbers:`, 
+          this.recentBlocksCache.slice(0, 3).map(b => parseInt(b.number, 16)))
+        
+        // **FIX**: Notify subscribers that cache is now available (first block)
+        if (this.recentBlocksCache.length === 1) {
+          console.log(`🎉 [${this.connectionId}] Cache is now available! Notifying pages...`)
+        }
+
+        const blockUpdate: RealtimeUpdate = {
+          type: 'newBlock',
+          data: enhancedBlockData,
           timestamp: Date.now()
         }
-        this.notifyCallbacks(gasPriceUpdate)
-      }
 
-      this.notifyCallbacks(blockUpdate)
+        // Emit gas price update (Tier 1 feature)
+        if (blockHeader.baseFeePerGas) {
+          const gasPriceUpdate: RealtimeUpdate = {
+            type: 'gasPriceUpdate',
+            data: {
+              gasPrice: parseInt(blockHeader.baseFeePerGas, 16) / 1e9,
+              blockNumber: blockNumber
+            },
+            timestamp: Date.now()
+          }
+          this.notifyCallbacks(gasPriceUpdate)
+        }
 
-      // Extract transactions from the full block since RETH optimized mode 
-      // doesn't support newPendingTransactions subscription
-      try {
-        const fullBlock = await rethClient.getBlock(blockHeader.hash, true)
-        if (fullBlock && fullBlock.transactions && Array.isArray(fullBlock.transactions)) {
-          console.log(`📦 [${this.connectionId}] Block #${blockNumber} has ${fullBlock.transactions.length} transactions`)
-          
-          // Emit transaction updates for each transaction in the block
-          for (const txHash of fullBlock.transactions) {
-            if (typeof txHash === 'string' && !this.lastTransactionHashes.has(txHash)) {
-              this.handleNewTransaction(txHash)
+        this.notifyCallbacks(blockUpdate)
+
+        // Extract transactions from the full block since RETH optimized mode 
+        // doesn't support newPendingTransactions subscription
+        try {
+          const blockHash = blockHeader.hash || blockHeader.blockHash
+          if (blockHash) {
+            const fullBlock = await rethClient.getBlock(blockHash, true)
+            if (fullBlock && fullBlock.transactions && Array.isArray(fullBlock.transactions)) {
+              console.log(`📦 [${this.connectionId}] Block #${blockNumber} has ${fullBlock.transactions.length} transactions`)
+              
+              // Emit transaction updates for each transaction in the block
+              for (const txHash of fullBlock.transactions) {
+                if (typeof txHash === 'string' && !this.lastTransactionHashes.has(txHash)) {
+                  this.handleNewTransaction(txHash)
+                }
+              }
             }
           }
+        } catch (error) {
+          console.warn(`⚠️ [${this.connectionId}] Failed to fetch full block for transactions:`, error)
         }
-      } catch (error) {
-        console.warn(`⚠️ [${this.connectionId}] Failed to fetch full block for transactions:`, error)
       }
+    } catch (error) {
+      console.error(`❌ [${this.connectionId}] Error in handleNewBlock:`, error)
+      console.error(`❌ [${this.connectionId}] Block header that caused error:`, blockHeader)
     }
   }
 
@@ -403,6 +443,7 @@ class RealtimeWebSocketManager {
 
   // **CRITICAL FIX**: Add cache access methods
   getCachedBlocks(): any[] {
+    console.log(`🔍 [${this.connectionId}] getCachedBlocks called - returning ${this.recentBlocksCache.length} blocks`)
     return [...this.recentBlocksCache] // Return copy to prevent mutation
   }
 
@@ -420,8 +461,38 @@ class RealtimeWebSocketManager {
       connectionId: this.connectionId,
       subscriberCount: this.callbacks.size,
       lastBlockNumber: this.lastBlockNumber,
-      reconnectAttempts: this.reconnectAttemps
+      reconnectAttempts: this.reconnectAttemps,
+      cacheStats: {
+        blocks: this.recentBlocksCache.length,
+        scheduledTxs: this.latestScheduledTxs.length,
+        hasMempoolStats: Object.keys(this.latestMempoolStats).length > 0
+      }
     }
+  }
+
+  // Debug method to verify cache state
+  debugCacheState() {
+    const state = {
+      connection: {
+        id: this.connectionId,
+        isConnected: this.isConnected,
+        lastBlockNumber: this.lastBlockNumber,
+        wsState: this.ws?.readyState
+      },
+      cache: {
+        blocksCount: this.recentBlocksCache.length,
+        scheduledTxsCount: this.latestScheduledTxs.length,
+        mempoolStatsKeys: Object.keys(this.latestMempoolStats),
+        firstBlock: this.recentBlocksCache[0] ? {
+          number: this.recentBlocksCache[0].number,
+          hash: this.recentBlocksCache[0].hash,
+          timestamp: this.recentBlocksCache[0].timestamp
+        } : null
+      },
+      subscribers: this.callbacks.size
+    }
+    console.log('🔍 [DEBUG] Cache State:', JSON.stringify(state, null, 2))
+    return state
   }
 
   disconnect() {
@@ -498,8 +569,22 @@ export function useRealtime(callbackId: string, callback: UpdateCallback) {
   return manager?.subscribe(callbackId, callback)
 }
 
-// Cleanup on page unload
+// Debug utilities - accessible from browser console
+export function debugWebSocketCache() {
+  if (realtimeManager) {
+    return realtimeManager.debugCacheState()
+  } else {
+    console.error('❌ No realtime manager instance found')
+    return null
+  }
+}
+
+// Make debug function available globally in browser
 if (typeof window !== 'undefined') {
+  (window as any).debugWebSocketCache = debugWebSocketCache;
+  (window as any).getRealtimeManager = getRealtimeManager;
+  
+  // Cleanup on page unload
   window.addEventListener('beforeunload', () => {
     if (realtimeManager) {
       realtimeManager.disconnect()
