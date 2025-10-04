@@ -42,6 +42,26 @@ npm run dev
 
 Visit `http://localhost:3000` to see the explorer.
 
+## Screenshots
+
+### Async Settlement Transaction (Type 0x12)
+
+![Async Settlement Transaction (Type 0x12)](./docs/screenshots/tx-async-settlement.png)
+
+Final settlement transaction with fee distribution in Ritual Chain async execution
+
+### EIP-1559 Transaction (Type 0x2)
+
+![EIP-1559 Transaction (Type 0x2)](./docs/screenshots/tx-eip1559.png)
+
+Modern EIP-1559 transaction with priority fee and base fee mechanism
+
+### Scheduled Transaction (Type 0x10)
+
+![Scheduled Transaction (Type 0x10)](./docs/screenshots/tx-scheduled.png)
+
+Ritual Chain scheduled transaction with Call ID tracking and cron-like execution
+
 ## Production Deployment
 
 ### GKE Deployment with Makefile
