@@ -159,6 +159,8 @@ class RealtimeWebSocketManager {
       const subscription = message.params?.subscription
       const result = message.params?.result
 
+      console.log(`🔍 [DEBUG] Subscription message - ID: ${subscription}, result type: ${typeof result}`)
+      
       if (!subscription) {
         console.warn(`⚠️ [${this.connectionId}] Subscription message without subscription ID:`, message)
         return
@@ -166,12 +168,15 @@ class RealtimeWebSocketManager {
 
       if (result && result.number) {
         // This is a block header from newHeads subscription
+        console.log(`🔍 [DEBUG] Identified as block header, calling handleNewBlock`)
         this.handleNewBlock(result)
       } else if (typeof result === 'string' && result.startsWith('0x')) {
         // This is a pending transaction hash
+        console.log(`🔍 [DEBUG] Identified as pending transaction: ${result.slice(0,10)}...`)
         this.handleNewPendingTransaction(result)
       } else {
         console.log(`📩 [${this.connectionId}] Unknown subscription result:`, result)
+        console.log(`🔍 [DEBUG] Result object keys:`, result ? Object.keys(result) : 'null')
       }
     } else if (message.id && message.result) {
       console.log(`📩 [${this.connectionId}] Subscription confirmed:`, message.result)
