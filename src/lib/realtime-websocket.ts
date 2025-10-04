@@ -193,6 +193,15 @@ class RealtimeWebSocketManager {
         timestamp: Date.now()
       }
 
+      // **CRITICAL FIX**: Add to cache for smart caching
+      this.recentBlocksCache.unshift(enhancedBlockData)
+      // Keep only last 50 blocks to prevent memory issues
+      if (this.recentBlocksCache.length > 50) {
+        this.recentBlocksCache = this.recentBlocksCache.slice(0, 50)
+      }
+      
+      console.log(`📦 [${this.connectionId}] Cache updated: ${this.recentBlocksCache.length} blocks cached`)
+
       const blockUpdate: RealtimeUpdate = {
         type: 'newBlock',
         data: enhancedBlockData,
@@ -290,6 +299,12 @@ class RealtimeWebSocketManager {
           rethClient.getScheduledTransactions()
         ])
 
+        // **CRITICAL FIX**: Add to cache for smart caching
+        this.latestMempoolStats = mempoolStats
+        this.latestScheduledTxs = scheduledTxs
+        
+        console.log(`📦 [${this.connectionId}] Cache updated: mempool + ${scheduledTxs?.length || 0} scheduled txs`)
+
         const mempoolUpdate: RealtimeUpdate = {
           type: 'mempoolUpdate',
           data: mempoolStats,
@@ -367,6 +382,19 @@ class RealtimeWebSocketManager {
       console.log(`📻 [${this.connectionId}] Unsubscribing: ${callbackId}`)
       this.callbacks.delete(callbackId)
     }
+  }
+
+  // **CRITICAL FIX**: Add cache access methods
+  getCachedBlocks(): any[] {
+    return [...this.recentBlocksCache] // Return copy to prevent mutation
+  }
+
+  getCachedScheduledTxs(): any[] {
+    return [...this.latestScheduledTxs]
+  }
+
+  getCachedMempoolStats(): any {
+    return { ...this.latestMempoolStats }
   }
 
   getConnectionStatus() {

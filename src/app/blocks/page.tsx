@@ -32,7 +32,7 @@ export default function BlocksPage() {
   const loadFromCache = () => {
     try {
       const manager = getRealtimeManager()
-      const cachedBlocks = (manager as any)?.recentBlocksCache || []
+      const cachedBlocks = manager.getCachedBlocks()
       
       if (cachedBlocks && cachedBlocks.length > 0) {
         console.log(`🚀 [Blocks] Using ${cachedBlocks.length} cached blocks for instant load`)

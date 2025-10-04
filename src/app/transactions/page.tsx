@@ -35,8 +35,8 @@ export default function TransactionsPage() {
   const loadFromCache = () => {
     try {
       const manager = getRealtimeManager()
-      const cachedBlocks = (manager as any)?.recentBlocksCache || []
-      const cachedTransactions = (manager as any)?.recentTransactionsCache || []
+      const cachedBlocks = manager.getCachedBlocks()
+      const cachedTransactions: Transaction[] = [] // Note: recentTransactionsCache not implemented yet
       
       if (cachedTransactions && cachedTransactions.length > 0) {
         console.log(`🚀 [Transactions] Using ${cachedTransactions.length} cached transactions for instant load`)

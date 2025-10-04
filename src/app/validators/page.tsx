@@ -138,9 +138,8 @@ export default function ValidatorsPage() {
     try {
       const manager = getRealtimeManager()
       
-      // For now, let's use the existing recentBlocksCache if available
-      // Since getCachedData doesn't exist yet, we'll access the cache directly
-      const cachedBlocks = (manager as any)?.recentBlocksCache || []
+      // Use proper cache access method
+      const cachedBlocks = manager.getCachedBlocks()
       
       if (cachedBlocks && cachedBlocks.length > 0) {
         console.log(`🚀 [Validators] Using ${cachedBlocks.length} cached blocks for instant load`)

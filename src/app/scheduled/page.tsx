@@ -39,7 +39,7 @@ export default function ScheduledPage() {
   const loadFromCache = () => {
     try {
       const manager = getRealtimeManager()
-      const cachedScheduled = (manager as any)?.latestScheduledTxs || []
+      const cachedScheduled = manager.getCachedScheduledTxs()
       
       if (cachedScheduled && cachedScheduled.length > 0) {
         console.log(`🚀 [Scheduled] Using ${cachedScheduled.length} cached scheduled transactions for instant load`)
