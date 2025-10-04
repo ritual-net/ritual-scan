@@ -136,10 +136,22 @@ export default function ValidatorsPage() {
   // Initialize with cached blocks from smart cache
   const loadCachedData = useCallback(() => {
     try {
+      console.log('🔍 [DEBUG] loadCachedData called')
       const manager = getRealtimeManager()
+      console.log('🔍 [DEBUG] Manager:', manager)
+      
+      if (!manager) {
+        console.error('❌ [DEBUG] No realtime manager found!')
+        return false
+      }
+      
+      // Check connection status
+      const status = manager.getConnectionStatus()
+      console.log('🔍 [DEBUG] Connection status:', status)
       
       // Use proper cache access method
       const cachedBlocks = manager.getCachedBlocks()
+      console.log(`🔍 [DEBUG] Got ${cachedBlocks?.length || 0} cached blocks:`, cachedBlocks)
       
       if (cachedBlocks && cachedBlocks.length > 0) {
         console.log(`🚀 [Validators] Using ${cachedBlocks.length} cached blocks for instant load`)
@@ -160,6 +172,8 @@ export default function ValidatorsPage() {
         recalculateValidatorStats()
         setLoading(false)
         return true // Successfully loaded from cache
+      } else {
+        console.log('🔍 [DEBUG] No cached blocks available, falling back to API')
       }
       
       return false // No cached data available
@@ -232,12 +246,14 @@ export default function ValidatorsPage() {
     const realtimeManager = getRealtimeManager()
     const unsubscribe = realtimeManager?.subscribe('validators-page', (update) => {
       if (update.type === 'newBlock') {
-        const blockNumber = parseInt(update.data.number, 16)
-        console.log('🔍 [Validators] New block received via WebSocket:', blockNumber)
+        handleNewBlock(update.data)
         
-        // Use ref to avoid re-subscription
-        if (handleNewBlockRef.current) {
-          handleNewBlockRef.current(update.data)
+        // **FIX**: If this is the first block and we have cached data now, reload from cache
+        if (validators.length === 0 && realtimeManager.getCachedBlocks().length > 0) {
+          console.log('🔄 [Validators] Detected cache is now available, retrying cache load...')
+          if (loadCachedData()) {
+            console.log('✅ [Validators] Successfully loaded from cache on retry!')
+          }
         }
       }
     })
@@ -245,7 +261,7 @@ export default function ValidatorsPage() {
     return () => {
       if (unsubscribe) unsubscribe()
     }
-  }, [])
+  }, [handleNewBlock, loadCachedData])
 
   const loadValidators = async () => {
     try {

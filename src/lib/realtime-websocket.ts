@@ -58,6 +58,13 @@ class RealtimeWebSocketManager {
         
         // Subscribe to new block headers (transactions will be extracted from blocks)
         this.subscribeToBlocks()
+        
+        // **FIX**: Trigger initial cache population for pages already loaded
+        setTimeout(() => {
+          this.forceRefresh('blocks')
+          this.forceRefresh('mempool')
+          this.forceRefresh('scheduled')
+        }, 1000) // Give subscriptions time to establish
       }
 
       this.ws.onmessage = (event) => {
@@ -201,6 +208,11 @@ class RealtimeWebSocketManager {
       }
       
       console.log(`📦 [${this.connectionId}] Cache updated: ${this.recentBlocksCache.length} blocks cached`)
+      
+      // **FIX**: Notify subscribers that cache is now available (first block)
+      if (this.recentBlocksCache.length === 1) {
+        console.log(`🎉 [${this.connectionId}] Cache is now available! Notifying pages...`)
+      }
 
       const blockUpdate: RealtimeUpdate = {
         type: 'newBlock',
