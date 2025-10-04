@@ -1,7 +1,26 @@
 {
-  "name": "etherscan-clone",
-  "version": "0.1.0",
-  "private": true,
+  "name": "ritual-scan",
+  "version": "1.0.0",
+  "description": "A modern blockchain explorer for Ritual Chain with real-time updates, async transaction support, and smart caching",
+  "author": "Ritual Network",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ritual-net/ritual-scan"
+  },
+  "keywords": [
+    "blockchain",
+    "explorer",
+    "ritual-chain",
+    "ethereum",
+    "web3",
+    "nextjs",
+    "typescript",
+    "real-time",
+    "websocket"
+  ],
+  "homepage": "https://ritual-scan.vercel.app",
+  "private": false,
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
