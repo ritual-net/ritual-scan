@@ -31,8 +31,54 @@ export default function TransactionsPage() {
   const [isPending, startTransition] = useTransition()
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
 
+  // Smart cache loader for transactions
+  const loadFromCache = () => {
+    try {
+      const manager = getRealtimeManager()
+      const cachedBlocks = (manager as any)?.recentBlocksCache || []
+      const cachedTransactions = (manager as any)?.recentTransactionsCache || []
+      
+      if (cachedTransactions && cachedTransactions.length > 0) {
+        console.log(`🚀 [Transactions] Using ${cachedTransactions.length} cached transactions for instant load`)
+        setTransactions(cachedTransactions.slice(0, 50))
+        setInitialLoading(false)
+        return true
+      }
+      
+      // Fallback: extract transactions from cached blocks
+      if (cachedBlocks && cachedBlocks.length > 0) {
+        console.log(`🚀 [Transactions] Extracting transactions from ${cachedBlocks.length} cached blocks`)
+        const allTransactions: Transaction[] = []
+        
+        for (const block of cachedBlocks.slice(0, 5)) {
+          if (block.transactions && Array.isArray(block.transactions)) {
+            for (const tx of block.transactions.slice(0, 10)) {
+              if (typeof tx === 'object' && tx.hash) {
+                allTransactions.push(tx as Transaction)
+              }
+            }
+          }
+        }
+        
+        if (allTransactions.length > 0) {
+          setTransactions(allTransactions.slice(0, 50))
+          setInitialLoading(false)
+          return true
+        }
+      }
+      
+      return false // No cached data available
+    } catch (error) {
+      console.warn('⚠️ [Transactions] Failed to load cached data:', error)
+      return false
+    }
+  }
+
   useEffect(() => {
-    loadTransactions()
+    // Try cache first, fallback to API
+    if (!loadFromCache()) {
+      loadTransactions()
+    }
     
     // Set up realtime updates using the enhanced WebSocket manager
     const realtimeManager = getRealtimeManager()

@@ -133,6 +133,43 @@ export default function ValidatorsPage() {
     setLastUpdate(new Date())
   }, [])
 
+  // Initialize with cached blocks from smart cache
+  const loadCachedData = useCallback(() => {
+    try {
+      const manager = getRealtimeManager()
+      
+      // For now, let's use the existing recentBlocksCache if available
+      // Since getCachedData doesn't exist yet, we'll access the cache directly
+      const cachedBlocks = (manager as any)?.recentBlocksCache || []
+      
+      if (cachedBlocks && cachedBlocks.length > 0) {
+        console.log(`🚀 [Validators] Using ${cachedBlocks.length} cached blocks for instant load`)
+        
+        // Process cached blocks to build initial validator stats
+        blockCache.current = cachedBlocks.map((block: any) => ({
+          number: parseInt(block.number, 16),
+          miner: block.miner || block.author || '0x0000000000000000000000000000000000000000',
+          timestamp: parseInt(block.timestamp, 16)
+        }))
+        
+        // Update latest block reference
+        if (blockCache.current.length > 0) {
+          latestBlockRef.current = Math.max(...blockCache.current.map(b => b.number))
+        }
+        
+        // Calculate initial stats from cached data
+        recalculateValidatorStats()
+        setLoading(false)
+        return true // Successfully loaded from cache
+      }
+      
+      return false // No cached data available
+    } catch (error) {
+      console.warn('⚠️ [Validators] Failed to load cached data:', error)
+      return false
+    }
+  }, [recalculateValidatorStats])
+
   // Handle new block from WebSocket - incremental update
   const handleNewBlock = useCallback(async (blockHeader: any) => {
     try {
@@ -184,7 +221,11 @@ export default function ValidatorsPage() {
   // Initialize once on mount
   useEffect(() => {
     setIsMounted(true)
-    loadValidators()
+    
+    // First try smart caching, then fall back to regular loading
+    if (!loadCachedData()) {
+      loadValidators()
+    }
   }, [])
 
   // Subscribe to WebSocket updates (only once)

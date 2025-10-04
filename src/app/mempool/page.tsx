@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useTransition } from 'react'
 import { rethClient } from '@/lib/reth-client'
 import { Navigation } from '@/components/Navigation'
+import { getRealtimeManager } from '@/lib/realtime-websocket'
 import { useMempoolUpdates, useTransactionUpdates, useRealtimeStatus } from '@/hooks/useRealtime'
 import { useEnhancedMempoolUpdates, usePendingTransactionStream } from '@/hooks/useRealtimeTier1'
 import { TransactionTypeChip, TransactionTypeLegend } from '@/components/TransactionTypeChip'
@@ -181,8 +182,39 @@ export default function MempoolPage() {
     return `Last updated: ${now.toLocaleTimeString()}`
   }
 
+  // Smart cache loader for mempool data
+  const loadFromCache = () => {
+    try {
+      const manager = getRealtimeManager()
+      const cachedMempool = (manager as any)?.latestMempoolStats || {}
+      const cachedTransactions = (manager as any)?.recentTransactionsCache || []
+      
+      if (Object.keys(cachedMempool).length > 0) {
+        console.log(`🚀 [Mempool] Using cached mempool stats for instant load`)
+        setStats(cachedMempool)
+        
+        // Filter for pending transactions
+        const pendingTransactions = cachedTransactions
+          .filter((tx: any) => tx.status === 'pending')
+          .slice(0, 50)
+        
+        setTransactions(pendingTransactions)
+        setInitialLoading(false)
+        return true
+      }
+      
+      return false // No cached data available
+    } catch (error) {
+      console.warn('⚠️ [Mempool] Failed to load cached data:', error)
+      return false
+    }
+  }
+
   useEffect(() => {
-    loadMempoolData() // Initial load on component mount
+    // Try cache first, fallback to API
+    if (!loadFromCache()) {
+      loadMempoolData()
+    }
   }, [])
 
   return (

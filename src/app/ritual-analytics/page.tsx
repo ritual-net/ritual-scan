@@ -343,7 +343,10 @@ export default function RitualAnalyticsPage() {
                     <div className="text-right">
                       <p className="text-white font-medium">{formatTokenAmount(analytics.executorEarnings)}</p>
                       <p className="text-xs text-lime-400">
-                        {formatPercentage((analytics.executorEarnings / analytics.totalProtocolFees) * 100)}
+                        {analytics.totalProtocolFees > 0 
+                          ? formatPercentage((analytics.executorEarnings / analytics.totalProtocolFees) * 100)
+                          : formatPercentage(60) // Default 60% when no fees
+                        }
                       </p>
                     </div>
                   </div>
@@ -355,7 +358,10 @@ export default function RitualAnalyticsPage() {
                     <div className="text-right">
                       <p className="text-white font-medium">{formatTokenAmount(analytics.validatorEarnings)}</p>
                       <p className="text-xs text-lime-400">
-                        {formatPercentage((analytics.validatorEarnings / analytics.totalProtocolFees) * 100)}
+                        {analytics.totalProtocolFees > 0 
+                          ? formatPercentage((analytics.validatorEarnings / analytics.totalProtocolFees) * 100)
+                          : formatPercentage(40) // Default 40% when no fees
+                        }
                       </p>
                     </div>
                   </div>

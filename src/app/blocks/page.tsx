@@ -28,8 +28,36 @@ export default function BlocksPage() {
   const [isPending, startTransition] = useTransition()
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
 
+  // Smart cache loader
+  const loadFromCache = () => {
+    try {
+      const manager = getRealtimeManager()
+      const cachedBlocks = (manager as any)?.recentBlocksCache || []
+      
+      if (cachedBlocks && cachedBlocks.length > 0) {
+        console.log(`🚀 [Blocks] Using ${cachedBlocks.length} cached blocks for instant load`)
+        setBlocks(cachedBlocks.slice(0, 20)) // Use first 20 blocks
+        
+        if (cachedBlocks.length > 0) {
+          const latest = parseInt(cachedBlocks[0].number, 16)
+          setLatestBlockNumber(latest)
+        }
+        
+        setInitialLoading(false)
+        return true // Successfully loaded from cache
+      }
+      return false // No cached data available
+    } catch (error) {
+      console.warn('⚠️ [Blocks] Failed to load cached data:', error)
+      return false
+    }
+  }
+
   useEffect(() => {
-    loadBlocks()
+    // Try cache first, fallback to API
+    if (!loadFromCache()) {
+      loadBlocks()
+    }
     
     const realtimeManager = getRealtimeManager()
     const unsubscribe = realtimeManager?.subscribe('blocks-page', (update) => {
