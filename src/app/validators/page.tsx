@@ -134,9 +134,9 @@ export default function ValidatorsPage() {
   }, [])
 
   // Initialize with cached blocks from smart cache
-  const loadCachedData = useCallback(() => {
+  const loadCachedData = useCallback(async (retryCount = 0, maxRetries = 5) => {
     try {
-      console.log('🔍 [DEBUG] loadCachedData called')
+      console.log(`🔍 [DEBUG] loadCachedData called (attempt ${retryCount + 1}/${maxRetries + 1})`)
       const manager = getRealtimeManager()
       console.log('🔍 [DEBUG] Manager:', manager)
       
@@ -173,7 +173,16 @@ export default function ValidatorsPage() {
         setLoading(false)
         return true // Successfully loaded from cache
       } else {
-        console.log('🔍 [DEBUG] No cached blocks available, falling back to API')
+        console.log(`🔍 [DEBUG] No cached blocks available yet (attempt ${retryCount + 1}/${maxRetries + 1})`)
+        
+        // Retry if cache is empty and we haven't exceeded max retries
+        if (retryCount < maxRetries) {
+          console.log(`⏳ [Validators] Cache empty, waiting 2s before retry...`)
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          return loadCachedData(retryCount + 1, maxRetries)
+        } else {
+          console.log('⚠️ [Validators] Max retries reached, falling back to API')
+        }
       }
       
       return false // No cached data available
@@ -235,10 +244,16 @@ export default function ValidatorsPage() {
   useEffect(() => {
     setIsMounted(true)
     
-    // First try smart caching, then fall back to regular loading
-    if (!loadCachedData()) {
-      loadValidators()
+    // First try smart caching with retries, then fall back to regular loading
+    const initializeValidators = async () => {
+      const cacheLoaded = await loadCachedData()
+      if (!cacheLoaded) {
+        loadValidators()
+      }
     }
+    
+    initializeValidators()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Subscribe to WebSocket updates (only once)
@@ -251,9 +266,11 @@ export default function ValidatorsPage() {
         // **FIX**: If this is the first block and we have cached data now, reload from cache
         if (validators.length === 0 && realtimeManager.getCachedBlocks().length > 0) {
           console.log('🔄 [Validators] Detected cache is now available, retrying cache load...')
-          if (loadCachedData()) {
-            console.log('✅ [Validators] Successfully loaded from cache on retry!')
-          }
+          loadCachedData().then((success) => {
+            if (success) {
+              console.log('✅ [Validators] Successfully loaded from cache on retry!')
+            }
+          })
         }
       }
     })

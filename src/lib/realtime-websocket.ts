@@ -44,9 +44,22 @@ class RealtimeWebSocketManager {
     }
 
     try {
-      // Try WebSocket connection to RETH node
-      const wsUrl = process.env.NEXT_PUBLIC_RETH_WS_URL || 'ws://35.196.101.134:8546'
-      console.log(`🔗 [${this.connectionId}] Attempting WebSocket connection to: ${wsUrl}`)
+      // Determine WebSocket URL based on environment
+      const isBrowser = typeof window !== 'undefined'
+      const isHttps = isBrowser && window.location.protocol === 'https:'
+      
+      let wsUrl: string
+      if (isBrowser && isHttps) {
+        // Use WSS proxy for HTTPS sites to avoid mixed content errors
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+        const host = window.location.host
+        wsUrl = `${protocol}//${host}/api/ws-proxy?id=${this.connectionId}`
+        console.log(`🔗 [${this.connectionId}] Using WebSocket proxy for HTTPS: ${wsUrl}`)
+      } else {
+        // Direct connection for HTTP or server-side
+        wsUrl = process.env.NEXT_PUBLIC_RETH_WS_URL || 'ws://35.196.101.134:8546'
+        console.log(`🔗 [${this.connectionId}] Direct WebSocket connection to: ${wsUrl}`)
+      }
       
       this.ws = new WebSocket(wsUrl)
       

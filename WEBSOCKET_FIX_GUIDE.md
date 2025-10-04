@@ -207,7 +207,7 @@ Subscription confirmed: 0x75776...
 ### Step 2: Verify Cache Population
 
 1. Start dev server: `npm run dev`
-2. Open http://localhost:3000 in browser
+2. Open http://localhost:5051 in browser
 3. Open browser console (F12)
 4. Wait 30 seconds
 5. Run: `debugWebSocketCache()`

@@ -27,10 +27,12 @@ export default function BlocksPage() {
   const [latestBlockNumber, setLatestBlockNumber] = useState<number>(0)
   const [isPending, startTransition] = useTransition()
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
+  const [isMounted, setIsMounted] = useState(false)
 
-  // Smart cache loader
-  const loadFromCache = () => {
+  // Smart cache loader with retry mechanism
+  const loadFromCache = async (retryCount = 0, maxRetries = 5) => {
     try {
+      console.log(`🔍 [Blocks] Loading from cache (attempt ${retryCount + 1}/${maxRetries + 1})`)
       const manager = getRealtimeManager()
       const cachedBlocks = manager.getCachedBlocks()
       
@@ -45,7 +47,19 @@ export default function BlocksPage() {
         
         setInitialLoading(false)
         return true // Successfully loaded from cache
+      } else {
+        console.log(`🔍 [Blocks] No cached blocks yet (attempt ${retryCount + 1}/${maxRetries + 1})`)
+        
+        // Retry if cache is empty and we haven't exceeded max retries
+        if (retryCount < maxRetries) {
+          console.log(`⏳ [Blocks] Waiting 2s before retry...`)
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          return loadFromCache(retryCount + 1, maxRetries)
+        } else {
+          console.log('⚠️ [Blocks] Max retries reached, falling back to API')
+        }
       }
+      
       return false // No cached data available
     } catch (error) {
       console.warn('⚠️ [Blocks] Failed to load cached data:', error)
@@ -54,10 +68,17 @@ export default function BlocksPage() {
   }
 
   useEffect(() => {
-    // Try cache first, fallback to API
-    if (!loadFromCache()) {
-      loadBlocks()
+    setIsMounted(true)
+    
+    // Try cache first with retries, fallback to API
+    const initializeBlocks = async () => {
+      const cacheLoaded = await loadFromCache()
+      if (!cacheLoaded) {
+        loadBlocks()
+      }
     }
+    
+    initializeBlocks()
     
     const realtimeManager = getRealtimeManager()
     const unsubscribe = realtimeManager?.subscribe('blocks-page', (update) => {
@@ -74,6 +95,7 @@ export default function BlocksPage() {
         unsubscribe()
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // High-performance silent update for real-time changes
@@ -129,6 +151,7 @@ export default function BlocksPage() {
   }
 
   const formatTimestamp = (timestamp: string) => {
+    if (!isMounted) return '--'
     try {
       const timestampValue = parseInt(timestamp, 16)
       // RETH appears to return timestamps in milliseconds, not seconds

@@ -43,9 +43,11 @@ export default function MempoolPage() {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
+  const [isMounted, setIsMounted] = useState(false)
 
   // Use HTTP polling instead of WebSocket for mempool data
   useEffect(() => {
+    setIsMounted(true)
     loadMempoolData()
     
     // Set up polling interval for mempool data
@@ -178,6 +180,7 @@ export default function MempoolPage() {
   }
 
   const getTimeSinceLastUpdate = () => {
+    if (!isMounted) return 'Last updated: --:--:--'
     const now = new Date()
     return `Last updated: ${now.toLocaleTimeString()}`
   }

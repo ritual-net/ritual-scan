@@ -215,19 +215,26 @@ export class RETHClient {
       id: Date.now()
     }
 
+    // Determine the URL to use based on environment
+    const isBrowser = typeof window !== 'undefined'
+    const isHttps = isBrowser && window.location.protocol === 'https:'
+    
+    // Use proxy for browser HTTPS to avoid mixed content errors
+    const targetUrl = (isBrowser && isHttps) ? '/api/rpc-proxy' : this.rpcUrl
+
     try {
-      const response = await fetch(this.rpcUrl, {
+      const response = await fetch(targetUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload)
       })
-
+      
       if (!response.ok) {
-        throw new Error(`RPC call failed: ${response.statusText}`)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
-
+      
       let data
       try {
         data = await response.json()
@@ -238,12 +245,15 @@ export class RETHClient {
       if (data.error) {
         throw new Error(`RPC error: ${data.error.message}`)
       }
-
       return data.result
     } catch (error) {
-      console.warn('Primary RPC failed, trying backup...', error)
+      console.error(`Failed to call ${method}:`, error)
       
-      // Try backup RPC
+      // Try backup RPC if available and not already using proxy
+      if (!this.backupRpcUrl || this.backupRpcUrl === this.rpcUrl || (isBrowser && isHttps)) {
+        throw error
+      }
+      
       try {
         const response = await fetch(this.backupRpcUrl, {
           method: 'POST',
