@@ -1,13 +1,13 @@
-#  Etherscan Clone - Deployment Guide
+# Ritual Scan - Deployment Guide
 
-## 📋 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Docker & Docker Compose installed
 - Node.js 18+ (for local development)
 - Make (for using the Makefile commands)
 
-###  Setup Environment
+### Setup Environment
 ```bash
 # Copy environment template and configure
 make env-setup
@@ -17,30 +17,36 @@ vi .env.local      # Development environment
 vi .env.production # Production environment
 ```
 
-### 🏃‍♂ Quick Commands
+### Quick Commands
 
 #### Development
 ```bash
-make up            # Start development environment
-make down          # Stop development environment
-make restart       # Restart development environment
+cd scripts
+make dev                    # Start development server
+make docker-dev-run        # Run development container with hot reload
+make docker-dev-compose    # Start development with docker-compose
+make docker-dev-stop       # Stop development containers
 ```
 
 #### Production
 ```bash
-make prod-up       # Start production environment
-make prod-down     # Stop production environment
+cd scripts
+make docker-build          # Build production Docker image
+make docker-run            # Run production container
+make docker-prod-compose   # Start production stack with docker-compose
+make docker-stop           # Stop and remove production container
 ```
 
 #### Docker Operations
 ```bash
-make docker-build  # Build production Docker image
-make docker-logs   # View container logs
-make docker-health # Check container health
-make size          # Show Docker image sizes
+cd scripts
+make docker-logs           # Show container logs
+make docker-health         # Check container health
+make docker-stats          # Show container statistics
+make docker-shell          # Access container shell
 ```
 
-##  Architecture
+## Architecture
 
 ### Multi-Stage Docker Build
 - **deps**: Install production dependencies
@@ -52,10 +58,11 @@ make size          # Show Docker image sizes
 - **dev**: Development with hot reload
 - **prod**: Production with Nginx reverse proxy
 
-##  Deployment Options
+## Deployment Options
 
 ### 1. Local Docker
 ```bash
+cd scripts
 # Build and run production container
 make docker-build
 make docker-run
@@ -65,274 +72,220 @@ make docker-run
 
 ### 2. Docker Compose Production
 ```bash
+cd scripts
 # Start full production stack
-make prod-up
+make docker-prod-compose
 
 # Includes:
-# - Next.js application
-# - Nginx reverse proxy  
-# - Redis cache (optional)
+# - Next.js application (ritual-scan)
+# - Smart caching enabled
 # - Health checks
+# - Auto-restart policies
 ```
 
-### 3. Kubernetes
+### 3. Google Kubernetes Engine (GKE)
 ```bash
-# Apply Kubernetes manifests
-kubectl apply -f k8s/deployment.yaml
+cd scripts
+# Deploy to GKE cluster
+make deploy-gke PROJECT_ID=your-project-id
 
-# Features:
-# - HorizontalPodAutoscaler
-# - Health checks
-# - Resource limits
-# - Ingress with SSL
+# Check deployment status
+make gke-status
+
+# View logs
+make gke-logs
+
+# Scale deployment
+make gke-scale REPLICAS=3
 ```
 
 ### 4. Cloud Platforms
 
-#### Vercel (Recommended)
+#### Google Cloud Run (Recommended)
 ```bash
-npm run build
-vercel deploy
+# Deploy using Cloud Build
+gcloud builds submit --config cloudbuild.yaml
+
+# Or manual deployment
+gcloud run deploy ritual-scan \
+  --image gcr.io/PROJECT_ID/ritual-scan:latest \
+  --region us-central1 \
+  --allow-unauthenticated
 ```
 
-#### Docker Registry
+#### Docker Registry Operations
 ```bash
-# Tag and push to registry
-make docker-tag
+cd scripts
+# Build and push to registry
 make docker-push
 
-# Pull and deploy
-make docker-pull
+# For Google Container Registry
+make docker-push-gcr PROJECT_ID=your-project-id
 ```
 
-##  Configuration
+## Configuration
 
 ### Environment Variables
 
 #### Required
 ```env
 NODE_ENV=production
-NEXT_PUBLIC_DEFAULT_CHAIN=ethereum
-```
-
-#### API Keys
-```env
-NEXT_PUBLIC_ETHERSCAN_API_KEY=your_key_here
-NEXT_PUBLIC_POLYGONSCAN_API_KEY=your_key_here
-NEXT_PUBLIC_ARBISCAN_API_KEY=your_key_here
-NEXT_PUBLIC_BASESCAN_API_KEY=your_key_here
-```
-
-#### Custom RETH Node
-```env
 NEXT_PUBLIC_RETH_RPC_URL=http://35.185.40.237:8545
 NEXT_PUBLIC_RETH_WS_URL=ws://35.185.40.237:8546
-NEXT_PUBLIC_RETH_BACKUP_RPC_URL=http://130.211.246.58:8545
 ```
 
-#### Optional Services
+#### Optional
 ```env
-NEXT_PUBLIC_ALCHEMY_API_KEY=your_key_here
-NEXT_PUBLIC_INFURA_PROJECT_ID=your_project_id
-NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=your_ga_id
+NEXT_PUBLIC_RETH_BACKUP_RPC_URL=http://130.211.246.58:8545
+NEXT_PUBLIC_NETWORK_NAME=Ritual Chain
+NEXT_PUBLIC_CHAIN_ID=7000
+NEXT_PUBLIC_CURRENCY_SYMBOL=RITUAL
 ```
 
-### Chain Configuration
-Add new chains in `src/lib/chains.ts`:
-
-```typescript
-mychain: {
-  id: 12345,
-  name: 'mychain',
-  displayName: 'My Custom Chain',
-  symbol: 'MCT',
-  rpcUrls: ['https://rpc.mychain.com'],
-  apiEndpoint: 'https://api.mychain.com',
-  features: {
-    eip1559: true,
-    contractVerification: true,
-    mempool: false,
-    traces: true,
-    logs: true,
-  }
-}
+#### Performance & Features
+```env
+NEXT_PUBLIC_WS_RECONNECT_ATTEMPTS=10
+NEXT_PUBLIC_CACHE_TTL=30000
+NEXT_PUBLIC_POLLING_INTERVAL=2000
+NEXT_PUBLIC_DEBUG_MODE=false
+NEXT_PUBLIC_DISABLE_CACHE=false
 ```
 
-##  Monitoring & Health Checks
+#### Production Only
+```env
+NEXT_TELEMETRY_DISABLED=1
+```
+
+## Monitoring & Health Checks
 
 ### Health Endpoint
 ```bash
 curl http://localhost:3000/api/health
 ```
 
-Response:
-```json
-{
-  "status": "ok",
-  "timestamp": "2025-09-27T08:00:00.000Z",
-  "uptime": 3600,
-  "environment": "production",
-  "version": "1.0.0",
-  "memory": {
-    "used": 45.2,
-    "total": 128.0,
-    "external": 2.1
-  },
-  "checks": {
-    "database": "ok",
-    "external_apis": "ok"
-  }
-}
-```
-
 ### Monitoring Commands
 ```bash
-make docker-stats   # Container resource usage
-make docker-logs    # Application logs
-make security-scan  # Security vulnerability scan
-make audit          # NPM security audit
+cd scripts
+make docker-stats      # Container resource usage
+make docker-logs       # Application logs  
+make security-scan     # Security vulnerability scan
+make gke-status       # GKE deployment status
+make gke-logs         # GKE pod logs
 ```
 
-## 🔐 Security
+## Security
 
-### Features
-- Content Security Policy (CSP)
-- Security headers (CSRF, XSS protection)
-- Input validation with Zod schemas
-- Rate limiting in Nginx
-- Non-root container user
+### Built-in Security Features
+- WebSocket connection validation
+- RPC endpoint health checks
+- Input sanitization for blockchain data
+- Rate limiting through smart caching
+- Non-root container execution
 
-### Security Scan
+### Security Scanning
 ```bash
-# Requires trivy installation
-make security-scan
+cd scripts
+make security-scan  # Requires trivy installation
 ```
 
-##  CI/CD
-
-### GitHub Actions
-Automated pipeline includes:
-- Testing and linting
-- Docker build and push
-- Security scanning
-- Deployment to staging/production
-
-### Workflow Triggers
-- Push to `main` → Deploy to production
-- Push to `develop` → Deploy to staging
-- Pull requests → Run tests
-
-##  Performance
+## Performance
 
 ### Optimizations
-- Multi-stage Docker build
+- Multi-stage Docker build for minimal image size
 - Next.js standalone output
-- Static asset caching
-- Gzip compression
-- Image optimization
+- Smart caching system for instant page navigation
+- WebSocket connection pooling
+- Progressive data loading
 
 ### Build Metrics
-- Build time: ~2-3 minutes
-- Image size: ~200MB (compressed)
-- Cold start: <2 seconds
-- Memory usage: ~128MB
+- Build time: ~3-5 minutes
+- Image size: ~200MB
+- Cold start: <2 seconds  
+- Memory usage: ~256MB with caching
 
-## 🛠 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
 #### Build Failures
 ```bash
-# Clear Docker cache
+cd scripts
+# Clean and rebuild
+make clean
 make docker-clean
-
-# Rebuild from scratch
 make docker-build
 ```
 
-#### Network Issues
+#### WebSocket Connection Issues
 ```bash
-# Check container network
-docker network ls
-docker network inspect etherscan-network
+# Test WebSocket endpoint
+wscat -c ws://your-rpc:8546
+
+# Check RPC connectivity
+curl -X POST http://your-rpc:8545 \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```
 
-#### Permission Issues
+#### GKE Deployment Issues
 ```bash
-# Fix file permissions
-chmod +x scripts/*
-sudo chown -R $USER:$USER .
+cd scripts
+# Check deployment status
+make gke-status
+
+# View pod logs
+make gke-logs
+
+# Restart deployment
+kubectl rollout restart deployment/ritual-scan
 ```
 
 ### Debugging
 ```bash
+cd scripts
 # Access container shell
 make docker-shell
 
-# View detailed logs
-docker logs -f etherscan-clone-container --tail 100
+# View container logs
+make docker-logs
 
 # Check container health
 make docker-health
 ```
 
-##  Updates & Rollbacks
+## Updates & Maintenance
 
 ### Update Application
 ```bash
 # Pull latest changes
 git pull origin main
 
-# Rebuild and restart
-make prod-down
-make docker-build
-make prod-up
+# Rebuild and redeploy
+cd scripts
+make docker-stop
+make docker-build  
+make docker-run
 ```
 
-### Rollback
+### GKE Updates
 ```bash
-# Stop current version
-make prod-down
+cd scripts
+# Deploy new version
+make deploy-gke PROJECT_ID=your-project-id
 
-# Run previous image
-docker run -d -p 3000:3000 etherscan-clone:previous-tag
-
-# Or use Makefile rollback
-make rollback
+# Check rollout status  
+kubectl rollout status deployment/ritual-scan
 ```
 
-## 📞 Support
+## Deployment Checklist
 
-### Health Checks
-- Application: `http://localhost:3000/api/health`
-- Container: `docker health etherscan-clone-container`
-- Nginx: `http://localhost/health`
-
-### Logs
-- Application: `make docker-logs`
-- Nginx: `docker logs nginx-container`
-- System: `docker stats`
-
-### Resources
-- GitHub Repository: [link]
-- Documentation: [link]
-- Issue Tracker: [link]
-
----
-
-##  Deployment Checklist
-
-- [ ] Environment variables configured
-- [ ] API keys obtained and set
-- [ ] SSL certificates configured (if using HTTPS)
-- [ ] Domain DNS configured
+- [ ] Environment variables configured (.env files)
+- [ ] RETH node endpoints accessible (RPC + WebSocket)
+- [ ] Google Cloud project setup (for GKE)
+- [ ] Container registry permissions configured
 - [ ] Health checks passing
-- [ ] Security scan completed
-- [ ] Performance testing done
-- [ ] Monitoring setup
-- [ ] Backup strategy implemented
-- [ ] Team access configured
+- [ ] Smart caching verified working
+- [ ] WebSocket connections stable
+- [ ] Performance metrics acceptable
 
----
-
-Built with ❤ for production deployment
+For more detailed configuration options, see [Environment Setup](./environment.md).
