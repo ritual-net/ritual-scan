@@ -12,6 +12,12 @@ export type UpdateCallback = (update: RealtimeUpdate) => void
 
 class RealtimeWebSocketManager {
   private ws: WebSocket | null = null
+  // Smart caching for instant page loads
+  private recentBlocksCache: any[] = []
+  private recentTransactionsCache: any[] = []
+  private latestMempoolStats: any = {}
+  private latestScheduledTxs: any[] = []
+  private latestAsyncCommitments: any[] = []
   private reconnectAttemps = 0
   private maxReconnectAttempts = 10
   private reconnectInterval = 1000 // Start with 1 second
