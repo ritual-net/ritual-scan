@@ -311,6 +311,80 @@ gcloud run services update ritual-scan \
 - Testing: Playwright end-to-end tests
 - Deployment: Docker, Kubernetes, Vercel
 
+## Ritual Chain Features
+
+### Transaction Types Supported
+
+| Type | Description | System Account | Features |
+|------|-------------|----------------|----------|
+| 0x0 | Legacy | N/A | Standard Ethereum transactions |
+| 0x2 | EIP-1559 | N/A | Enhanced gas mechanism |
+| 0x10 | Scheduled | 0x...fa7e | Cron-like execution, Call ID tracking |
+| 0x11 | AsyncCommitment | 0x...fa8e | TEE execution commitment |
+| 0x12 | AsyncSettlement | 0x...fa9e | Final settlement with fee distribution |
+
+### Enhanced Search Patterns
+
+- **callId:10567** - Search scheduled transactions by Call ID
+- **origin:0x...** - Find transactions by origin hash
+- **10567** - Numeric Call ID search
+- System account detection (fa7e, fa8e, fa9e)
+- Precompile addresses (0x...0801, etc.)
+
+### Pages & Features
+
+#### Core Pages
+- **Homepage** - Network overview, latest blocks/transactions, stats
+- **Blocks** - Real-time block explorer with detailed views
+- **Transactions** - Live transaction feed with type filtering
+- **Mempool** - Real-time mempool monitoring with WebSocket updates
+
+#### Ritual-Specific Pages
+- **Scheduled** - Scheduled transaction pool with Call ID filtering
+- **Ritual Analytics** - Advanced Ritual Chain metrics and adoption
+- **Transaction Details** - Enhanced with async flow visualization
+- **System Accounts** - Special pages for Ritual system addresses
+
+## Project Structure
+
+```
+ritual-scan/
+├── src/
+│   ├── app/                    # Next.js App Router pages
+│   │   ├── (pages)/           # Main application pages
+│   │   │   ├── blocks/        # Block explorer
+│   │   │   ├── transactions/  # Transaction feed
+│   │   │   ├── validators/    # Validator statistics
+│   │   │   ├── mempool/       # Mempool monitoring
+│   │   │   ├── scheduled/     # Scheduled transactions
+│   │   │   └── ritual-analytics/ # Ritual-specific analytics
+│   │   ├── api/               # API routes
+│   │   └── globals.css        # Global styles
+│   ├── components/            # Reusable UI components
+│   │   ├── ui/               # shadcn/ui components
+│   │   ├── blocks/           # Block-related components
+│   │   ├── transactions/     # Transaction components
+│   │   └── layout/           # Layout components
+│   ├── lib/                  # Core utilities and clients
+│   │   ├── reth-client.ts    # Enhanced RETH client
+│   │   ├── realtime-websocket.ts # WebSocket manager
+│   │   ├── transaction-decoder.ts # TX type detection
+│   │   └── utils.ts          # Helper utilities
+│   ├── hooks/                # Custom React hooks
+│   │   ├── useRealtime.ts    # WebSocket integration
+│   │   └── useBlockchain.ts  # Blockchain data hooks
+│   └── types/                # TypeScript definitions
+├── docs/                     # Documentation
+│   ├── screenshots/          # UI screenshots
+│   ├── DEPLOYMENT.md         # Deployment guide
+│   └── environment.md        # Environment setup
+├── scripts/                  # Build and deployment scripts
+│   └── Makefile             # Production deployment
+├── k8s/                     # Kubernetes manifests
+├── tests/                   # Playwright E2E tests
+└── tools/                   # Development utilities
+```
+
 ## Contributing
 
 Please read our [Contributing Guide](./CONTRIBUTING.md) for development setup and guidelines.
