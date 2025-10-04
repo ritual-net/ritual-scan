@@ -45,7 +45,7 @@ class RealtimeWebSocketManager {
 
     try {
       // Try WebSocket connection to RETH node
-      const wsUrl = 'ws://104.196.32.199:8546'
+      const wsUrl = process.env.NEXT_PUBLIC_RETH_WS_URL || 'ws://35.196.101.134:8546'
       console.log(`🔗 [${this.connectionId}] Attempting WebSocket connection to: ${wsUrl}`)
       
       this.ws = new WebSocket(wsUrl)
